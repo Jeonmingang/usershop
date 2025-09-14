@@ -1,0 +1,52 @@
+defaults:
+  initial-slots: 9
+  max-expansions: 5
+  currency-name: "코인"
+
+# 방송 포맷 (등록 성공 시)
+announce:
+  on-register: true
+  register-format: "&e{player}&7님이 &f{amount}x {item}&7을 &e{price} {currency}&7(개당)에 등록했습니다."
+
+# 오픈 아이템/권 템플릿은 기존과 동일하게 name/lore 완전일치로 매칭
+opener-item:
+  name: "&a유저상점 오픈"
+  lore:
+    - "&7이 아이템을 들고 우클릭하면 유저상점이 열립니다."
+
+tickets:
+  register:
+    name: "&b등록권"
+    lore:
+      - "&7유저상점에 물품 등록 가능"
+  expand:
+    name: "&e확장권"
+    lore:
+      - "&7유저상점 슬롯 +9"
+
+gui:
+  rows: 6
+  controls:
+    prev-slot: 45
+    search-slot: 49
+    next-slot: 53
+  items:
+    filler: BLACK_STAINED_GLASS_PANE
+    prev: ARROW
+    next: ARROW
+    search: COMPASS
+  titles:
+    main: "&a유저상점 &7- 상점 목록 {page}"
+    shop: "&b{owner}&7 님 상점 &7- 페이지 {page}"
+    search: "&d검색 결과 &7- '{query}' &7페이지 {page}"
+  lore:
+    head:
+      - "&7등록 상품: &f{count}개"
+      - "&7최저가: &e{minPrice} {currency}"
+      - "&8클릭: 상점 열기"
+    item:
+      - "&7판매자: &f{seller}"
+      - "&7가격: &e{price} {currency} &7(1개당)"
+      - "&7재고: &f{amount}개"
+      - "&8좌클릭: 1개 구매"
+      - "&8쉬프트-좌클릭: 64개 구매"
