@@ -5,7 +5,7 @@
 
   <groupId>com.minkang.ultimate</groupId>
   <artifactId>UserShop</artifactId>
-  <version>1.2.2</version>
+  <version>1.2.4</version>
   <packaging>jar</packaging>
   <name>UserShop</name>
   <description>User shop/auction GUI for 1.16.5 (Korean cmds)</description>
@@ -26,6 +26,10 @@
       <id>sonatype</id>
       <url>https://oss.sonatype.org/content/groups/public/</url>
     </repository>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -36,7 +40,7 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>net.milkbowl.vault</groupId>
+      <groupId>com.github.MilkBowl</groupId>
       <artifactId>VaultAPI</artifactId>
       <version>1.7</version>
       <scope>provided</scope>
