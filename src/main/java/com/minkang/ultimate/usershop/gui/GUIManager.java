@@ -94,7 +94,7 @@ public class GUIManager {
 
         inv.setItem(prevSlot, prev); inv.setItem(nextSlot, next); inv.setItem(searchSlot, search);
 
-        List<OwnerEntry> owners = shopManager.getOwners();
+        java.util.List<OwnerEntry> owners = shopManager.getOwners();
         int start = (page - 1) * 45;
         int end = Math.min(start + 45, owners.size());
         int idx = 0;
@@ -275,8 +275,7 @@ public class GUIManager {
 
     public boolean handleControlClick(Player p, ItemStack clicked, int rawSlot, String title) {
         if (clicked == null) return false;
-        String name = (clicked.hasItemMeta() && clicked.getItemMeta().hasDisplayName())
-                ? ChatColor.stripColor(clicked.getItemMeta().getDisplayName()) : "";
+        String name = (clicked.hasItemMeta() && clicked.getItemMeta().hasDisplayName()) ? ChatColor.stripColor(clicked.getItemMeta().getDisplayName()) : "";
         ViewContext vc = views.get(p.getUniqueId());
         if (vc == null) vc = new ViewContext();
 
@@ -286,11 +285,7 @@ public class GUIManager {
 
         if (isPrev) {
             int prev = vc.page - 1;
-            if (prev < 1) {
-                if (vc.mode == Mode.SHOP || vc.mode == Mode.SEARCH) openMain(p, 1);
-                else p.sendMessage(color("&7첫 페이지입니다."));
-                return true;
-            }
+            if (prev < 1) { if (vc.mode == Mode.SHOP || vc.mode == Mode.SEARCH) openMain(p, 1); else p.sendMessage(color("&7첫 페이지입니다.")); return true; }
             if (vc.mode == Mode.MAIN) openMain(p, prev);
             else if (vc.mode == Mode.SHOP) openOwnerShop(p, vc.owner, prev);
             else if (vc.mode == Mode.SEARCH) openSearch(p, prev, vc.query);
@@ -303,10 +298,7 @@ public class GUIManager {
             else if (vc.mode == Mode.SEARCH) openSearch(p, next, vc.query);
             return true;
         }
-        if (isSearch) {
-            beginSearch(p, vc.mode, vc.owner);
-            return true;
-        }
+        if (isSearch) { beginSearch(p, vc.mode, vc.owner); return true; }
         return false;
     }
 

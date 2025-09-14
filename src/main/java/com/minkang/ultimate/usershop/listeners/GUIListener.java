@@ -38,7 +38,7 @@ public class GUIListener implements Listener {
         if (!related) return;
 
         int topSize = e.getView().getTopInventory().getSize();
-        if (e.getRawSlot() < 0 || e.getRawSlot() >= topSize) return;
+        if (e.getRawSlot() < 0 || e.getRawSlot() >= topSize) return; // only top
         e.setCancelled(true);
 
         ItemStack clicked = e.getCurrentItem();
@@ -56,15 +56,9 @@ public class GUIListener implements Listener {
             slotStr = im.getPersistentDataContainer().get(new org.bukkit.NamespacedKey(plugin, "usershop-slot"), org.bukkit.persistence.PersistentDataType.STRING);
         } catch (Throwable t) {}
 
-        if (slotStr == null) { // probably a head in MAIN
-            guiManager.handleContentClick(p, clicked);
-            return;
-        }
+        if (slotStr == null) { guiManager.handleContentClick(p, clicked); return; }
 
-        if (!plugin.isEconomyReady()) {
-            p.sendMessage(color("&c구매 기능은 Vault/Economy 플러그인이 있을 때만 동작합니다."));
-            return;
-        }
+        if (!plugin.isEconomyReady()) { p.sendMessage(color("&c구매 기능은 Vault/Economy 플러그인이 있을 때만 동작합니다.")); return; }
 
         java.util.UUID owner; int slot;
         try { owner = java.util.UUID.fromString(ownerStr); } catch (Exception ex) { return; }
@@ -72,10 +66,7 @@ public class GUIListener implements Listener {
 
         Double ppu = shopManager.getListingPrice(owner, slot);
         org.bukkit.inventory.ItemStack stored = shopManager.getListingItem(owner, slot);
-        if (ppu == null || stored == null) {
-            p.sendMessage(color("&c이미 판매 완료되었거나 존재하지 않습니다."));
-            return;
-        }
+        if (ppu == null || stored == null) { p.sendMessage(color("&c이미 판매 완료되었거나 존재하지 않습니다.")); return; }
 
         int qty = (e.getClick() == ClickType.SHIFT_LEFT) ? 64 : 1;
         int available = stored.getAmount();
@@ -84,25 +75,17 @@ public class GUIListener implements Listener {
 
         double total = ppu * qty;
         net.milkbowl.vault.economy.Economy econ = plugin.getEconomy();
-        if (!econ.has(p, total)) {
-            p.sendMessage(color("&c잔액이 부족합니다. 필요: " + String.format("%.2f", total)));
-            return;
-        }
+        if (!econ.has(p, total)) { p.sendMessage(color("&c잔액이 부족합니다. 필요: " + String.format("%.2f", total))); return; }
 
         econ.withdrawPlayer(p, total);
         OfflinePlayer sellerOffline = plugin.getServer().getOfflinePlayer(owner);
         econ.depositPlayer(sellerOffline, total);
 
         org.bukkit.inventory.ItemStack give = shopManager.takeFromListing(owner, slot, qty);
-        if (give == null) {
-            p.sendMessage(color("&c구매 실패: 재고 확인 중 오류."));
-            econ.depositPlayer(p, total);
-            return;
-        }
+        if (give == null) { p.sendMessage(color("&c구매 실패: 재고 확인 중 오류.")); econ.depositPlayer(p, total); return; }
+
         java.util.HashMap<Integer, org.bukkit.inventory.ItemStack> left = p.getInventory().addItem(give);
-        if (!left.isEmpty()) {
-            for (org.bukkit.inventory.ItemStack s : left.values()) p.getWorld().dropItemNaturally(p.getLocation(), s);
-        }
+        if (!left.isEmpty()) for (org.bukkit.inventory.ItemStack s : left.values()) p.getWorld().dropItemNaturally(p.getLocation(), s);
 
         p.sendMessage(color("&a구매 완료! &7구매 수량: &f" + qty + " &7총액: &e" + String.format("%.2f", total)));
         if (sellerOffline.isOnline()) {

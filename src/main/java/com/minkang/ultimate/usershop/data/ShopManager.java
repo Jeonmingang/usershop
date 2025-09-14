@@ -42,7 +42,7 @@ public class ShopManager {
 
     public int addCapacity(UUID uuid, int add) {
         int cap = getCapacity(uuid) + add;
-        int max = (plugin.getConfig().getInt("defaults.max-expansions", 5) + 1) * 9; // 최대 54
+        int max = (plugin.getConfig().getInt("defaults.max-expansions", 5) + 1) * 9;
         if (cap > max) cap = max;
         usersCfg.set("players." + uuid.toString() + ".slots", cap);
         saveAll();
@@ -96,26 +96,12 @@ public class ShopManager {
     }
 
     public static class MarketEntry {
-        public UUID owner;
-        public int slot;
-        public double pricePerUnit;
-        public ItemStack item;
-        public String ownerName;
-
-        public MarketEntry(UUID owner, int slot, double ppu, ItemStack item, String ownerName) {
-            this.owner = owner; this.slot = slot; this.pricePerUnit = ppu; this.item = item; this.ownerName = ownerName;
-        }
+        public UUID owner; public int slot; public double pricePerUnit; public ItemStack item; public String ownerName;
+        public MarketEntry(UUID owner, int slot, double ppu, ItemStack item, String ownerName) { this.owner = owner; this.slot = slot; this.pricePerUnit = ppu; this.item = item; this.ownerName = ownerName; }
     }
-
     public static class OwnerEntry {
-        public UUID owner;
-        public String ownerName;
-        public int itemCount;
-        public double minPrice;
-
-        public OwnerEntry(UUID owner, String name, int count, double minPrice) {
-            this.owner = owner; this.ownerName = name; this.itemCount = count; this.minPrice = minPrice;
-        }
+        public UUID owner; public String ownerName; public int itemCount; public double minPrice;
+        public OwnerEntry(UUID owner, String name, int count, double minPrice) { this.owner = owner; this.ownerName = name; this.itemCount = count; this.minPrice = minPrice; }
     }
 
     public List<OwnerEntry> getOwners() {
@@ -129,15 +115,13 @@ public class ShopManager {
             try { uuid = UUID.fromString(uuidStr); } catch (Exception e) { continue; }
             OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
             String name = (op != null && op.getName() != null) ? op.getName() : uuid.toString();
-            int count = 0;
-            double min = Double.MAX_VALUE;
+            int count = 0; double min = Double.MAX_VALUE;
             for (String slotKey : ls.getKeys(false)) {
                 String path = "players." + uuidStr + ".listings." + slotKey;
                 double price = usersCfg.getDouble(path + ".price", 0.0);
                 ItemStack item = usersCfg.getItemStack(path + ".item");
                 if (item == null) continue;
-                count++;
-                if (price < min) min = price;
+                count++; if (price < min) min = price;
             }
             if (count > 0) {
                 if (min == Double.MAX_VALUE) min = 0.0;
@@ -157,16 +141,14 @@ public class ShopManager {
         for (String slotKey : ls.getKeys(false)) {
             String path = base + "." + slotKey;
             double price = usersCfg.getDouble(path + ".price", 0.0);
-            ItemStack item = usersCfg.getItemStack(path + ".item");
-            if (item == null) continue;
+            ItemStack item = usersCfg.getItemStack(path + ".item"); if (item == null) continue;
             if (query != null && !query.isEmpty()) {
                 String dname = (item.hasItemMeta() && item.getItemMeta().hasDisplayName())
                         ? ChatColor.stripColor(item.getItemMeta().getDisplayName()).toLowerCase()
                         : item.getType().name().toLowerCase();
                 if (!dname.contains(query.toLowerCase())) continue;
             }
-            int slot;
-            try { slot = Integer.parseInt(slotKey); } catch (Exception e) { slot = -1; }
+            int slot; try { slot = Integer.parseInt(slotKey); } catch (Exception e) { slot = -1; }
             out.add(new MarketEntry(owner, slot, price, item.clone(), name));
         }
         out.sort(Comparator.comparingDouble(a -> a.pricePerUnit));
@@ -180,22 +162,19 @@ public class ShopManager {
         for (String uuidStr : playersSec.getKeys(false)) {
             ConfigurationSection ls = usersCfg.getConfigurationSection("players." + uuidStr + ".listings");
             if (ls == null) continue;
-            UUID uuid;
-            try { uuid = UUID.fromString(uuidStr); } catch (Exception e) { continue; }
+            UUID uuid; try { uuid = UUID.fromString(uuidStr); } catch (Exception e) { continue; }
             String name = Optional.ofNullable(Bukkit.getOfflinePlayer(uuid).getName()).orElse(uuid.toString());
             for (String slotKey : ls.getKeys(false)) {
                 String path = "players." + uuidStr + ".listings." + slotKey;
                 double price = usersCfg.getDouble(path + ".price", 0.0);
-                ItemStack item = usersCfg.getItemStack(path + ".item");
-                if (item == null) continue;
+                ItemStack item = usersCfg.getItemStack(path + ".item"); if (item == null) continue;
                 if (query != null && !query.isEmpty()) {
                     String dname = (item.hasItemMeta() && item.getItemMeta().hasDisplayName())
                             ? ChatColor.stripColor(item.getItemMeta().getDisplayName()).toLowerCase()
                             : item.getType().name().toLowerCase();
                     if (!dname.contains(query.toLowerCase())) continue;
                 }
-                int slot;
-                try { slot = Integer.parseInt(slotKey); } catch (Exception e) { slot = -1; }
+                int slot; try { slot = Integer.parseInt(slotKey); } catch (Exception e) { slot = -1; }
                 out.add(new MarketEntry(uuid, slot, price, item.clone(), name));
             }
         }
@@ -206,20 +185,13 @@ public class ShopManager {
     public ItemStack takeFromListing(UUID owner, int slot, int qty) {
         String base = "players." + owner.toString() + ".listings." + slot;
         if (!usersCfg.isConfigurationSection(base)) return null;
-        ItemStack stack = usersCfg.getItemStack(base + ".item");
-        if (stack == null) return null;
-        int amount = stack.getAmount();
-        if (amount <= 0) return null;
+        ItemStack stack = usersCfg.getItemStack(base + ".item"); if (stack == null) return null;
+        int amount = stack.getAmount(); if (amount <= 0) return null;
         int take = Math.min(qty, amount);
-        ItemStack give = stack.clone();
-        give.setAmount(take);
+        ItemStack give = stack.clone(); give.setAmount(take);
         int remain = amount - take;
-        if (remain <= 0) {
-            usersCfg.set(base, null);
-        } else {
-            stack.setAmount(remain);
-            usersCfg.set(base + ".item", stack);
-        }
+        if (remain <= 0) usersCfg.set(base, null);
+        else { stack.setAmount(remain); usersCfg.set(base + ".item", stack); }
         saveAll();
         return give;
     }
