@@ -132,29 +132,6 @@ public class ShopManager {
         return out;
     }
 
-    public List<MarketEntry> getOwnerListings(UUID owner, String query) {
-        List<MarketEntry> out = new ArrayList<>();
-        String base = "players." + owner.toString() + ".listings";
-        ConfigurationSection ls = usersCfg.getConfigurationSection(base);
-        if (ls == null) return out;
-        String name = Optional.ofNullable(Bukkit.getOfflinePlayer(owner).getName()).orElse(owner.toString());
-        for (String slotKey : ls.getKeys(false)) {
-            String path = base + "." + slotKey;
-            double price = usersCfg.getDouble(path + ".price", 0.0);
-            ItemStack item = usersCfg.getItemStack(path + ".item"); if (item == null) continue;
-            if (query != null && !query.isEmpty()) {
-                String dname = (item.hasItemMeta() && item.getItemMeta().hasDisplayName())
-                        ? ChatColor.stripColor(item.getItemMeta().getDisplayName()).toLowerCase()
-                        : item.getType().name().toLowerCase();
-                if (!dname.contains(query.toLowerCase())) continue;
-            }
-            int slot; try { slot = Integer.parseInt(slotKey); } catch (Exception e) { slot = -1; }
-            out.add(new MarketEntry(owner, slot, price, item.clone(), name));
-        }
-        out.sort(Comparator.comparingDouble(a -> a.pricePerUnit));
-        return out;
-    }
-
     public List<MarketEntry> getAllListings(String query) {
         List<MarketEntry> out = new ArrayList<>();
         ConfigurationSection playersSec = usersCfg.getConfigurationSection("players");
@@ -163,7 +140,7 @@ public class ShopManager {
             ConfigurationSection ls = usersCfg.getConfigurationSection("players." + uuidStr + ".listings");
             if (ls == null) continue;
             UUID uuid; try { uuid = UUID.fromString(uuidStr); } catch (Exception e) { continue; }
-            String name = Optional.ofNullable(Bukkit.getOfflinePlayer(uuid).getName()).orElse(uuid.toString());
+            String name = java.util.Optional.ofNullable(Bukkit.getOfflinePlayer(uuid).getName()).orElse(uuid.toString());
             for (String slotKey : ls.getKeys(false)) {
                 String path = "players." + uuidStr + ".listings." + slotKey;
                 double price = usersCfg.getDouble(path + ".price", 0.0);

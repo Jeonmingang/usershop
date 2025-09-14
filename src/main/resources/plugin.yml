@@ -1,9 +1,8 @@
 name: UserShop
 main: com.minkang.ultimate.usershop.Main
-version: 1.2.6
+version: 1.2.12
 api-version: 1.16
 author: minkang
-website: https://github.com/Jeonmingang
 softdepend: [Vault]
 commands:
   "유저상점":

@@ -1,7 +1,6 @@
-# UserShop config
 defaults:
   initial-slots: 9
-  max-expansions: 5   # 0~5 (총 6단계) → 최대 54칸
+  max-expansions: 5
   currency-name: "코인"
 
 opener-item:
@@ -21,7 +20,7 @@ tickets:
       - "&7유저상점 슬롯 +9"
 
 gui:
-  rows: 6 # 54칸
+  rows: 6
   controls:
     prev-slot: 45
     search-slot: 49
@@ -52,6 +51,10 @@ gui:
 economy:
   enabled: true
 
+announce:
+  on-register: true
+  register-format: "&e{player}&7님이 &f{amount}x {item}&7을 &e{price} {currency}&7(개당)에 등록했습니다."
+
 search:
   aliases:
     PIXELMON_RARE_CANDY:
@@ -68,22 +71,6 @@ search:
     ENCHANTED_GOLDEN_APPLE: "마법부여된 황금 사과"
     ROTTEN_FLESH: "썩은 살점"
     COBBLESTONE: "조약돌"
-    OAK_LOG: "참나무 원목"
-    OAK_PLANKS: "참나무 판자"
     STONE: "돌"
-    DIAMOND_ORE: "다이아몬드 광석"
-    IRON_ORE: "철 광석"
-    GOLD_ORE: "금 광석"
     COAL: "석탄"
-    COAL_ORE: "석탄 광석"
-    LAPIS_LAZULI: "청금석"
-    LAPIS_ORE: "청금석 광석"
     REDSTONE: "레드스톤 가루"
-    REDSTONE_ORE: "레드스톤 광석"
-    QUARTZ: "네더 석영"
-    NETHER_QUARTZ_ORE: "네더 석영 광석"
-
-
-announce:
-  on-register: true
-  register-format: "&e{player}&7님이 &f{amount}x {item}&7을 &e{price} {currency}&7(개당)에 등록했습니다."

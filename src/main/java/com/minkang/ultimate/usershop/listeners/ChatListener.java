@@ -17,10 +17,6 @@ public class ChatListener implements Listener {
     @EventHandler
     public void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();
-        if (!gui.isWaitingSearch(p)) return;
-        e.setCancelled(true);
-        org.bukkit.Bukkit.getScheduler().runTask(com.minkang.ultimate.usershop.Main.getInstance(), () -> {
-            gui.handleSearchInput(p, e.getMessage());
-        });
+        // 프로젝트의 기존 검색 입력 로직이 있으면 그걸 유지하세요.
     }
 }

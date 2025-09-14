@@ -4,6 +4,8 @@ import com.minkang.ultimate.usershop.Main;
 import com.minkang.ultimate.usershop.data.ShopManager;
 import com.minkang.ultimate.usershop.gui.GUIManager;
 import com.minkang.ultimate.usershop.util.ItemUtil;
+import com.minkang.ultimate.usershop.util.NameMap;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -29,65 +31,57 @@ public class UserShopCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("플레이어만 사용할 수 있습니다.");
-            return true;
-        }
+        if (!(sender instanceof Player)) { sender.sendMessage("플레이어만 사용할 수 있습니다."); return true; }
         Player p = (Player) sender;
         UUID uuid = p.getUniqueId();
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("열기")) {
-            guiManager.openMain(p, 1);
-            return true;
-        }
+        if (args.length == 0) { sendHelp(p); return true; }
+        if (args[0].equalsIgnoreCase("열기")) { guiManager.openMain(p, 1); return true; }
 
         String sub = args[0];
 
         if (sub.equalsIgnoreCase("등록") || sub.equalsIgnoreCase("추가")) {
-            if (args.length < 3) {
-                p.sendMessage(color("&c사용법: /유저상점 등록 <가격> <슬롯>"));
-                return true;
-            }
-            double unitPrice;
-            try { unitPrice = Double.parseDouble(args[1]); } catch (Exception e) {
-                p.sendMessage(color("&c가격은 숫자여야 합니다.")); return true; }
-            int slot;
-            try { slot = Integer.parseInt(args[2]); } catch (Exception e) {
-                p.sendMessage(color("&c슬롯은 숫자여야 합니다.")); return true; }
+            if (args.length < 3) { p.sendMessage(color("&c사용법: /유저상점 등록 <가격> <슬롯>")); return true; }
+            double unitPrice; try { unitPrice = Double.parseDouble(args[1]); } catch (Exception e) { p.sendMessage(color("&c가격은 숫자여야 합니다.")); return true; }
+            int slot; try { slot = Integer.parseInt(args[2]); } catch (Exception e) { p.sendMessage(color("&c슬롯은 숫자여야 합니다.")); return true; }
 
             int capacity = shopManager.getCapacity(uuid);
-            if (slot < 0 || slot >= capacity) {
-                p.sendMessage(color("&c해당 슬롯은 사용할 수 없습니다. (0~" + (capacity - 1) + ")"));
-                return true;
-            }
+            if (slot < 0 || slot >= capacity) { p.sendMessage(color("&c해당 슬롯은 사용할 수 없습니다. (0~" + (capacity - 1) + ")")); return true; }
 
             ItemStack hand = p.getInventory().getItemInMainHand();
-            if (hand == null || hand.getType() == Material.AIR) {
-                p.sendMessage(color("&c손에 등록할 아이템을 들고 있어야 합니다."));
-                return true;
-            }
+            if (hand == null || hand.getType() == Material.AIR) { p.sendMessage(color("&c손에 등록할 아이템을 들고 있어야 합니다.")); return true; }
 
             boolean hasTicket = ItemUtil.consumeMatchingOne(p.getInventory(), plugin.getConfig().getConfigurationSection("tickets.register"));
-            if (!hasTicket) {
-                p.sendMessage(color("&c등록권이 필요합니다. (이름/로어 완전 일치)"));
-                return true;
-            }
+            if (!hasTicket) { p.sendMessage(color("&c등록권이 필요합니다. (이름/로어 완전 일치)")); return true; }
 
             ItemStack copy = hand.clone();
             p.getInventory().setItemInMainHand(null);
             shopManager.addListing(uuid, slot, unitPrice, copy);
+
+            if (plugin.getConfig().getBoolean("announce.on-register", true)) {
+                String itemName = (copy.hasItemMeta() && copy.getItemMeta().hasDisplayName())
+                        ? ChatColor.stripColor(copy.getItemMeta().getDisplayName())
+                        : copy.getType().name();
+                String ko = new NameMap(plugin).koreanOfMaterial(copy.getType().name());
+                if (ko != null && !ko.isEmpty()) itemName = ko;
+                String msg = plugin.getConfig().getString(
+                        "announce.register-format",
+                        "&e{player}&7님이 &f{amount}x {item}&7을 &e{price} {currency}&7(개당)에 등록했습니다.");
+                msg = msg.replace("{player}", p.getName())
+                         .replace("{item}", itemName)
+                         .replace("{amount}", String.valueOf(copy.getAmount()))
+                         .replace("{price}", String.format("%.2f", unitPrice))
+                         .replace("{currency}", plugin.getConfig().getString("defaults.currency-name", "코인"));
+                Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', msg));
+            }
+
             p.sendMessage(color("&a슬롯 " + slot + "에 등록 완료. 단가: " + unitPrice + " " + plugin.getConfig().getString("defaults.currency-name", "코인")));
             return true;
         }
 
         if (sub.equalsIgnoreCase("등록취소") || sub.equalsIgnoreCase("삭제")) {
-            if (args.length < 2) {
-                p.sendMessage(color("&c사용법: /유저상점 등록취소 <슬롯>"));
-                return true;
-            }
-            int slot;
-            try { slot = Integer.parseInt(args[1]); } catch (Exception e) {
-                p.sendMessage(color("&c슬롯은 숫자여야 합니다.")); return true; }
+            if (args.length < 2) { p.sendMessage(color("&c사용법: /유저상점 등록취소 <슬롯>")); return true; }
+            int slot; try { slot = Integer.parseInt(args[1]); } catch (Exception e) { p.sendMessage(color("&c슬롯은 숫자여야 합니다.")); return true; }
             boolean ok = shopManager.removeListingToPlayer(uuid, slot, p);
             if (!ok) p.sendMessage(color("&c해당 슬롯에 등록된 아이템이 없습니다."));
             else p.sendMessage(color("&a슬롯 " + slot + " 등록이 제거되었습니다."));
@@ -152,26 +146,27 @@ public class UserShopCommand implements CommandExecutor {
             } else { p.sendMessage(color("&c알 수 없는 설정입니다.")); return true; }
         }
 
-        guiManager.openMain(p, 1);
+        sendHelp(p);
         return true;
     }
 
     private String color(String s) { return ChatColor.translateAlternateColorCodes('&', s); }
 
-
-private void sendHelp(org.bukkit.entity.Player p) {
-    boolean admin = p.hasPermission("usershop.admin");
-    p.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', "&a[유저상점 도움말]"));
-    p.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', "&e/유저상점 열기 &7- 메인 GUI 열기"));
-    p.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', "&e/유저상점 등록 &f<가격> <슬롯> &7- 손 아이템 등록 (등록권 소모)"));
-    p.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', "&e/유저상점 등록취소 &f<슬롯> &7- 해당 슬롯 등록 취소"));
-    p.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', "&e/유저상점 확장 &7- 확장권 1개 소모, 슬롯 +9"));
-    if (admin) {
-        p.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', "&8-------------------------"));
-        p.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', "&c[관리자 전용] /유저상점 설정 ..."));
+    private void sendHelp(Player p) {
+        boolean isAdmin = p.hasPermission("usershop.admin");
+        p.sendMessage(color("&a[유저상점 도움말]"));
+        p.sendMessage(color("&e/유저상점 열기 &7- 메인 GUI 열기"));
+        p.sendMessage(color("&e/유저상점 등록 &f<가격> <슬롯> &7- 손 아이템 등록 (등록권 소모)"));
+        p.sendMessage(color("&e/유저상점 등록취소 &f<슬롯> &7- 해당 슬롯 등록 취소"));
+        p.sendMessage(color("&e/유저상점 확장 &7- 확장권 1개 소모, 슬롯 +9"));
+        if (isAdmin) {
+            p.sendMessage(color("&8-------------------------"));
+            p.sendMessage(color("&c[관리자 전용]"));
+            p.sendMessage(color("&e/유저상점 설정 오픈 &7- 손 아이템을 오픈아이템으로 지정"));
+            p.sendMessage(color("&e/유저상점 설정 등록권 &7- 손 아이템을 등록권으로 지정"));
+            p.sendMessage(color("&e/유저상점 설정 확장권 &7- 손 아이템을 확장권으로 지정"));
+            p.sendMessage(color("&e/유저상점 설정 확장삭제 &f<플레이어> <횟수> &7- 슬롯 단계 감소(1~6)"));
+            p.sendMessage(color("&e/유저상점 설정 제거 &f<슬롯> &7또는 &f<플레이어> <슬롯> &7- 강제 제거"));
+        }
     }
 }
-
-}
-
-// TODO: 방송 훅은 등록 처리 직후에 아래 블록을 호출하세요.
