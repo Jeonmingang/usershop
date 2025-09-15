@@ -1,3 +1,0 @@
-
-broadcasts:
-  item_registered: "&e[상점] &f{seller}&7 님이 &a{item}&7 {qty}개를 &b{price}&7에 등록했습니다. 남은재고: &f{stock}"
