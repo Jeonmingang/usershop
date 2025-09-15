@@ -20,6 +20,7 @@ public class ItemUtil {
         List<String> lore = im != null && im.hasLore() ? im.getLore() : new ArrayList<>();
         plugin.getConfig().set(path + ".name", name);
         plugin.getConfig().set(path + ".lore", lore);
+        plugin.saveConfig();
         return true;
     }
 

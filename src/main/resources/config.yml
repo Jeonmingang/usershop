@@ -1,6 +1,6 @@
 defaults:
   initial-slots: 9
-  max-expansions: 5
+  max-expansions: 6   # 총 6번까지 확장(+9씩) = 최대 54
   currency-name: "코인"
 
 opener-item:
@@ -45,8 +45,6 @@ gui:
       - "&7재고: &f{amount}개"
       - "&8좌클릭: 1개 구매"
       - "&8쉬프트-좌클릭: 64개 구매"
-    item-korean:
-      - "&7한글명: &f{kor}"
 
 economy:
   enabled: true
@@ -59,7 +57,10 @@ search:
   aliases:
     PIXELMON_RARE_CANDY:
       ko: "이상한사탕"
-      aliases: ["rare candy", "rare_candy", "레어캔디", "이사탕", "PIXLMON_RARE_CANDY"]
+      aliases: ["rare candy", "rare_candy", "레어캔디", "이사탕", "PIXLMON_RARE_CANDY", "픽셀몬_이상한사탕"]
+    PIXELMON_MASTER_BALL:
+      ko: "마스터볼"
+      aliases: ["master ball", "master_ball", "마볼", "PIXLMON_MASTER_BALL"]
   korean-materials:
     DIAMOND: "다이아몬드"
     DIAMOND_SWORD: "다이아몬드 검"

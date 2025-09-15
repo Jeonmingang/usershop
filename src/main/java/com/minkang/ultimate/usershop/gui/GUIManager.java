@@ -31,6 +31,7 @@ public class GUIManager {
     private final NameMap nameMap;
 
     private final java.util.Map<java.util.UUID, ViewContext> views = new java.util.HashMap<>();
+    private final java.util.Set<java.util.UUID> pendingSearch = new java.util.HashSet<>();
 
     public GUIManager(Main plugin, ShopManager shopManager) {
         this.plugin = plugin;
@@ -45,7 +46,8 @@ public class GUIManager {
         public UUID owner;
     }
 
-    // ==== Helpers ====
+    public ViewContext getViewContext(Player p) { return views.get(p.getUniqueId()); }
+
     public boolean isOurInventoryTitle(String title) {
         String s = ChatColor.stripColor(title == null ? "" : title);
         return s.contains("유저상점") || s.contains("검색 결과") || s.contains(" 님 상점");
@@ -58,6 +60,21 @@ public class GUIManager {
         else if (vc.mode == Mode.SHOP) openOwnerShop(p, vc.owner, vc.page);
         else if (vc.mode == Mode.SEARCH) openSearch(p, vc.page, vc.query);
     }
+    public void requestSearch(Player p) {
+        pendingSearch.add(p.getUniqueId());
+        p.sendMessage(color("&b검색어를 채팅에 입력하세요. &7(취소: 취소)"));
+    }
+    public boolean handleChat(Player p, String msg) {
+        if (!pendingSearch.contains(p.getUniqueId())) return false;
+        pendingSearch.remove(p.getUniqueId());
+        if (msg.equalsIgnoreCase("취소")) {
+            p.sendMessage(color("&7검색이 취소되었습니다."));
+            return true;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> openSearch(p, 1, msg));
+        return true;
+    }
+
     private String color(String s) { return ChatColor.translateAlternateColorCodes('&', s); }
     private ItemStack named(Material m, String name) {
         ItemStack is = new ItemStack(m);
@@ -80,7 +97,6 @@ public class GUIManager {
         im.setLore(lore);
     }
 
-    // ==== Main ====
     public void openMain(Player p, int page) {
         int rows = plugin.getConfig().getInt("gui.rows", 6);
         int size = rows * 9;
@@ -131,13 +147,130 @@ public class GUIManager {
     }
 
     public void openSearch(Player p, int page, String rawQuery) {
-        // 프로젝트 원래 검색 구현이 있으면 그걸 쓰세요. 임시로 메인 재오픈 메시지만.
-        openMain(p, 1);
-        p.sendMessage(color("&7검색어: &f" + rawQuery));
+        int rows = plugin.getConfig().getInt("gui.rows", 6);
+        int size = rows * 9;
+        String title = color(plugin.getConfig().getString("gui.titles.search", "&d검색 결과 - '{query}' 페이지 {page}")
+                .replace("{query}", rawQuery)
+                .replace("{page}", String.valueOf(page)));
+        Inventory inv = Bukkit.createInventory(p, size, title);
+
+        Material filler = Material.valueOf(plugin.getConfig().getString("gui.items.filler", "BLACK_STAINED_GLASS_PANE"));
+        ItemStack fillerItem = new ItemStack(filler);
+        ItemMeta fm = fillerItem.getItemMeta(); fm.setDisplayName(" "); fillerItem.setItemMeta(fm);
+        for (int i=45;i<size;i++) inv.setItem(i, fillerItem);
+
+        int prevSlot = plugin.getConfig().getInt("gui.controls.prev-slot", 45);
+        int nextSlot = plugin.getConfig().getInt("gui.controls.next-slot", 53);
+        int searchSlot = plugin.getConfig().getInt("gui.controls.search-slot", 49);
+        inv.setItem(prevSlot, named(Material.valueOf(plugin.getConfig().getString("gui.items.prev", "ARROW")), "&7이전 페이지"));
+        inv.setItem(nextSlot, named(Material.valueOf(plugin.getConfig().getString("gui.items.next", "ARROW")), "&7다음 페이지"));
+        inv.setItem(searchSlot, named(Material.valueOf(plugin.getConfig().getString("gui.items.search", "COMPASS")), "&b검색"));
+
+        java.util.Set<String> norm = nameMap.normalizeQuery(rawQuery);
+        java.util.List<MarketEntry> all = shopManager.getAllListings(null);
+        java.util.List<MarketEntry> filtered = new java.util.ArrayList<>();
+        String rq = rawQuery.toLowerCase();
+        for (MarketEntry me : all) {
+            String displayName = (me.item.hasItemMeta() && me.item.getItemMeta().hasDisplayName())
+                    ? ChatColor.stripColor(me.item.getItemMeta().getDisplayName()).toLowerCase()
+                    : "";
+            String mat = me.item.getType().name().toLowerCase();
+            String kor = nameMap.koreanOfMaterial(me.item.getType().name());
+            boolean ok = false;
+            if (!displayName.isEmpty() && displayName.contains(rq)) ok = true;
+            if (mat.contains(rq)) ok = true;
+            if (!ok && kor != null && !kor.isEmpty() && kor.replace(" ", "").toLowerCase().contains(rq.replace(" ", ""))) ok = true;
+            if (!ok) {
+                for (String q : norm) {
+                    if (mat.contains(q) || (!displayName.isEmpty() && displayName.contains(q))) { ok = true; break; }
+                    if (kor != null && !kor.isEmpty() && kor.replace(" ", "").toLowerCase().contains(q.replace(" ", ""))) { ok = true; break; }
+                }
+            }
+            if (ok) filtered.add(me);
+        }
+
+        int start = (page - 1) * 45;
+        int end = Math.min(start + 45, filtered.size());
+        int idx = 0;
+        for (int i=start; i<end; i++) {
+            MarketEntry me = filtered.get(i);
+            ItemStack display = me.item.clone();
+            ItemMeta im = display.getItemMeta();
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            for (String line : plugin.getConfig().getStringList("gui.lore.item")) {
+                String s = line.replace("{seller}", me.ownerName)
+                        .replace("{price}", String.format("%.2f", me.pricePerUnit))
+                        .replace("{currency}", plugin.getConfig().getString("defaults.currency-name", "코인"))
+                        .replace("{amount}", String.valueOf(me.item.getAmount()));
+                lore.add(color(s));
+            }
+            im.setLore(lore);
+            addKoreanLore(im, display);
+            setPdc(im, "usershop-owner", me.owner.toString());
+            setPdc(im, "usershop-slot", String.valueOf(me.slot));
+            display.setItemMeta(im);
+            inv.setItem(idx++, display);
+        }
+
+        ViewContext vc = new ViewContext();
+        vc.mode = Mode.SEARCH; vc.page = page; vc.query = rawQuery; vc.owner = null;
+        views.put(p.getUniqueId(), vc);
+        p.openInventory(inv);
+        p.sendMessage(color("&7검색어: &f" + rawQuery + " &7결과: &f" + filtered.size() + "개"));
     }
 
     public void openOwnerShop(Player p, UUID owner, int page) {
-        // 프로젝트 원래 개별 상점 구현이 있으면 그걸 쓰세요. 임시로 메인 재오픈.
-        openMain(p, 1);
+        int rows = plugin.getConfig().getInt("gui.rows", 6);
+        int size = rows * 9;
+        String ownerName = String.valueOf(Bukkit.getOfflinePlayer(owner).getName());
+        if (ownerName == null) ownerName = owner.toString();
+        String title = color(plugin.getConfig().getString("gui.titles.shop", "&b{owner} 님 상점 - 페이지 {page}")
+                .replace("{owner}", ownerName)
+                .replace("{page}", String.valueOf(page)));
+        Inventory inv = Bukkit.createInventory(p, size, title);
+
+        Material filler = Material.valueOf(plugin.getConfig().getString("gui.items.filler", "BLACK_STAINED_GLASS_PANE"));
+        ItemStack fillerItem = new ItemStack(filler);
+        ItemMeta fm = fillerItem.getItemMeta(); fm.setDisplayName(" "); fillerItem.setItemMeta(fm);
+        for (int i=45;i<size;i++) inv.setItem(i, fillerItem);
+
+        int prevSlot = plugin.getConfig().getInt("gui.controls.prev-slot", 45);
+        int nextSlot = plugin.getConfig().getInt("gui.controls.next-slot", 53);
+        int searchSlot = plugin.getConfig().getInt("gui.controls.search-slot", 49);
+        inv.setItem(prevSlot, named(Material.valueOf(plugin.getConfig().getString("gui.items.prev", "ARROW")), "&7이전 페이지"));
+        inv.setItem(nextSlot, named(Material.valueOf(plugin.getConfig().getString("gui.items.next", "ARROW")), "&7다음 페이지"));
+        inv.setItem(searchSlot, named(Material.valueOf(plugin.getConfig().getString("gui.items.search", "COMPASS")), "&b검색"));
+
+        java.util.List<MarketEntry> list = shopManager.getAllListings(null);
+        java.util.List<MarketEntry> mine = new java.util.ArrayList<>();
+        for (MarketEntry me : list) if (me.owner.equals(owner)) mine.add(me);
+
+        int start = (page - 1) * 45;
+        int end = Math.min(start + 45, mine.size());
+        int idx = 0;
+        for (int i=start; i<end; i++) {
+            MarketEntry me = mine.get(i);
+            ItemStack display = me.item.clone();
+            ItemMeta im = display.getItemMeta();
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            for (String line : plugin.getConfig().getStringList("gui.lore.item")) {
+                String s = line.replace("{seller}", me.ownerName)
+                        .replace("{price}", String.format("%.2f", me.pricePerUnit))
+                        .replace("{currency}", plugin.getConfig().getString("defaults.currency-name", "코인"))
+                        .replace("{amount}", String.valueOf(me.item.getAmount()));
+                lore.add(color(s));
+            }
+            im.setLore(lore);
+            addKoreanLore(im, display);
+            setPdc(im, "usershop-owner", me.owner.toString());
+            setPdc(im, "usershop-slot", String.valueOf(me.slot));
+            display.setItemMeta(im);
+            inv.setItem(idx++, display);
+        }
+
+        ViewContext vc = new ViewContext();
+        vc.mode = Mode.SHOP; vc.page = page; vc.query = null; vc.owner = owner;
+        views.put(p.getUniqueId(), vc);
+        p.openInventory(inv);
     }
 }

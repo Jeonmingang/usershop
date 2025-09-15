@@ -1,7 +1,6 @@
 package com.minkang.ultimate.usershop.listeners;
 
 import com.minkang.ultimate.usershop.gui.GUIManager;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
@@ -16,7 +15,7 @@ public class ChatListener implements Listener {
 
     @EventHandler
     public void onChat(AsyncPlayerChatEvent e) {
-        Player p = e.getPlayer();
-        // 프로젝트의 기존 검색 입력 로직이 있으면 그걸 유지하세요.
+        boolean handled = gui.handleChat(e.getPlayer(), e.getMessage());
+        if (handled) e.setCancelled(true);
     }
 }

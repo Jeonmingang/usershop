@@ -17,8 +17,8 @@ import java.util.*;
 public class ShopManager {
 
     private final Main plugin;
-    private File usersFile;
-    private FileConfiguration usersCfg;
+    private final File usersFile;
+    private final FileConfiguration usersCfg;
 
     public ShopManager(Main plugin) {
         this.plugin = plugin;
@@ -37,14 +37,14 @@ public class ShopManager {
 
     public int getCapacity(UUID uuid) {
         int def = plugin.getConfig().getInt("defaults.initial-slots", 9);
-        return usersCfg.getInt("players." + uuid.toString() + ".slots", def);
+        return usersCfg.getInt("players." + uuid + ".slots", def);
     }
 
     public int addCapacity(UUID uuid, int add) {
         int cap = getCapacity(uuid) + add;
-        int max = (plugin.getConfig().getInt("defaults.max-expansions", 5) + 1) * 9;
+        int max = Math.min((plugin.getConfig().getInt("defaults.max-expansions", 6) + 1) * 9, 54);
         if (cap > max) cap = max;
-        usersCfg.set("players." + uuid.toString() + ".slots", cap);
+        usersCfg.set("players." + uuid + ".slots", cap);
         saveAll();
         return cap;
     }
@@ -53,29 +53,29 @@ public class ShopManager {
         int cap = getCapacity(uuid) - minus;
         int min = plugin.getConfig().getInt("defaults.initial-slots", 9);
         if (cap < min) cap = min;
-        usersCfg.set("players." + uuid.toString() + ".slots", cap);
+        usersCfg.set("players." + uuid + ".slots", cap);
         saveAll();
         return cap;
     }
 
     public void addListing(UUID uuid, int slot, double unitPrice, ItemStack stack) {
-        String base = "players." + uuid.toString() + ".listings." + slot;
+        String base = "players." + uuid + ".listings." + slot;
         usersCfg.set(base + ".price", unitPrice);
         usersCfg.set(base + ".item", stack);
         saveAll();
     }
 
     public ItemStack getListingItem(UUID uuid, int slot) {
-        return usersCfg.getItemStack("players." + uuid.toString() + ".listings." + slot + ".item");
+        return usersCfg.getItemStack("players." + uuid + ".listings." + slot + ".item");
     }
 
     public Double getListingPrice(UUID uuid, int slot) {
-        String path = "players." + uuid.toString() + ".listings." + slot + ".price";
+        String path = "players." + uuid + ".listings." + slot + ".price";
         return usersCfg.contains(path) ? usersCfg.getDouble(path) : null;
     }
 
     public boolean removeListingToPlayer(UUID uuid, int slot, Player receiver) {
-        String base = "players." + uuid.toString() + ".listings." + slot;
+        String base = "players." + uuid + ".listings." + slot;
         if (!usersCfg.isConfigurationSection(base)) return false;
         ItemStack stack = usersCfg.getItemStack(base + ".item");
         usersCfg.set(base, null);
@@ -83,16 +83,18 @@ public class ShopManager {
         if (stack != null) {
             HashMap<Integer, ItemStack> left = receiver.getInventory().addItem(stack);
             if (!left.isEmpty()) {
-                for (ItemStack s : left.values()) {
-                    receiver.getWorld().dropItemNaturally(receiver.getLocation(), s);
-                }
+                for (ItemStack s : left.values()) receiver.getWorld().dropItemNaturally(receiver.getLocation(), s);
             }
         }
         return true;
     }
 
-    public boolean adminRemoveListingToPlayer(UUID uuid, int slot, Player receiver) {
-        return removeListingToPlayer(uuid, slot, receiver);
+    public boolean adminRemoveListing(UUID owner, int slot) {
+        String base = "players." + owner + ".listings." + slot;
+        if (!usersCfg.isConfigurationSection(base)) return false;
+        usersCfg.set(base, null);
+        saveAll();
+        return true;
     }
 
     public static class MarketEntry {
@@ -160,7 +162,7 @@ public class ShopManager {
     }
 
     public ItemStack takeFromListing(UUID owner, int slot, int qty) {
-        String base = "players." + owner.toString() + ".listings." + slot;
+        String base = "players." + owner + ".listings." + slot;
         if (!usersCfg.isConfigurationSection(base)) return null;
         ItemStack stack = usersCfg.getItemStack(base + ".item"); if (stack == null) return null;
         int amount = stack.getAmount(); if (amount <= 0) return null;

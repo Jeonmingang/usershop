@@ -3,6 +3,7 @@ package com.minkang.ultimate.usershop.listeners;
 import com.minkang.ultimate.usershop.Main;
 import com.minkang.ultimate.usershop.data.ShopManager;
 import com.minkang.ultimate.usershop.gui.GUIManager;
+import com.minkang.ultimate.usershop.gui.GUIManager.Mode;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -28,6 +29,8 @@ public class GUIListener implements Listener {
         this.guiManager = guiManager;
     }
 
+    private String color(String s) { return ChatColor.translateAlternateColorCodes('&', s); }
+
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player)) return;
@@ -43,9 +46,20 @@ public class GUIListener implements Listener {
         if (clicked == null) return;
 
         String name = (clicked.hasItemMeta() && clicked.getItemMeta().hasDisplayName()) ? ChatColor.stripColor(clicked.getItemMeta().getDisplayName()) : "";
+
         if (name.contains("이전 페이지") || name.contains("다음 페이지") || name.contains("검색")) {
-            // 실제 페이지 이동/검색은 프로젝트 원래 로직에 맞게 처리하세요.
-            p.closeInventory();
+            GUIManager.ViewContext vc = guiManager.getViewContext(p);
+            if (vc == null) return;
+            if (name.contains("검색")) {
+                p.closeInventory();
+                guiManager.requestSearch(p);
+                return;
+            }
+            int delta = name.contains("이전") ? -1 : +1;
+            int newPage = Math.max(1, vc.page + delta);
+            if (vc.mode == Mode.MAIN) guiManager.openMain(p, newPage);
+            else if (vc.mode == Mode.SEARCH) guiManager.openSearch(p, newPage, vc.query);
+            else if (vc.mode == Mode.SHOP) guiManager.openOwnerShop(p, vc.owner, newPage);
             return;
         }
 
@@ -59,9 +73,14 @@ public class GUIListener implements Listener {
             slotStr = im.getPersistentDataContainer().get(new NamespacedKey(plugin, "usershop-slot"), PersistentDataType.STRING);
         } catch (Throwable t) {}
 
+        if (ownerStr != null && (slotStr == null || slotStr.isEmpty())) {
+            try { guiManager.openOwnerShop(p, java.util.UUID.fromString(ownerStr), 1); } catch (Exception ignored) {}
+            return;
+        }
+
         if (slotStr == null) return;
 
-        if (!plugin.isEconomyReady()) { p.sendMessage(color("&c구매 기능은 Vault/Economy 플러그인이 있을 때만 동작합니다.")); return; }
+        if (!com.minkang.ultimate.usershop.Main.getInstance().isEconomyReady()) { p.sendMessage(color("&c구매 기능은 Vault/Economy 플러그인이 있을 때만 동작합니다.")); return; }
 
         java.util.UUID owner; int slot;
         try { owner = java.util.UUID.fromString(ownerStr); } catch (Exception ex) { return; }
@@ -77,11 +96,11 @@ public class GUIListener implements Listener {
         if (qty > available) qty = available;
 
         double total = ppu * qty;
-        net.milkbowl.vault.economy.Economy econ = plugin.getEconomy();
+        net.milkbowl.vault.economy.Economy econ = com.minkang.ultimate.usershop.Main.getInstance().getEconomy();
         if (!econ.has(p, total)) { p.sendMessage(color("&c잔액이 부족합니다. 필요: " + String.format("%.2f", total))); return; }
 
         econ.withdrawPlayer(p, total);
-        OfflinePlayer sellerOffline = plugin.getServer().getOfflinePlayer(owner);
+        OfflinePlayer sellerOffline = com.minkang.ultimate.usershop.Main.getInstance().getServer().getOfflinePlayer(owner);
         econ.depositPlayer(sellerOffline, total);
 
         org.bukkit.inventory.ItemStack give = shopManager.takeFromListing(owner, slot, qty);
@@ -101,6 +120,4 @@ public class GUIListener implements Listener {
             guiManager.clearView((Player) e.getPlayer());
         }
     }
-
-    private String color(String s) { return ChatColor.translateAlternateColorCodes('&', s); }
 }

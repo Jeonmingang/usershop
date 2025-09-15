@@ -8,7 +8,7 @@ public class NameMap {
 
     private final Map<String, String> canonToKo = new HashMap<>();
     private final Map<String, Set<String>> aliasToCanon = new HashMap<>();
-    private final Map<String, String> materialKo = new HashMap<>(); // MATERIAL -> ko
+    private final Map<String, String> materialKo = new HashMap<>();
 
     public NameMap(org.bukkit.plugin.java.JavaPlugin plugin) {
         ConfigurationSection sec = plugin.getConfig().getConfigurationSection("search.aliases");
