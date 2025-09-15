@@ -104,27 +104,57 @@ public class UserShopCommand implements CommandExecutor {
         }
 
         if (sub.equalsIgnoreCase("설정")) {
-            if (!p.hasPermission("usershop.admin")) { p.sendMessage(color("&c권한이 없습니다.")); return true; }
-            p.sendMessage(color("&7(관리자 설정 명령은 기존 그대로 유지)"));
-            return true;
-        }
+    if (!p.hasPermission("usershop.admin")) { p.sendMessage(color("&c권한이 없습니다.")); return true; }
+    if (args.length == 1) { sendAdminHelp(p); return true; }
+    String asub = args[1];
 
-        sendHelp(p);
+    if (asub.equalsIgnoreCase("오픈")) {
+        boolean ok = com.minkang.ultimate.usershop.util.ItemUtil.applyTemplateFromItem(plugin, "opener-item", p.getInventory().getItemInMainHand());
+        p.sendMessage(ok ? color("&a오픈 아이템 템플릿이 갱신되었습니다.") : color("&c손에 든 아이템이 없습니다."));
         return true;
     }
-
-    private String color(String s) { return ChatColor.translateAlternateColorCodes('&', s); }
-
-    private void sendHelp(Player p) {
-        boolean isAdmin = p.hasPermission("usershop.admin");
-        p.sendMessage(color("&a[유저상점 도움말]"));
-        p.sendMessage(color("&e/유저상점 열기 &7- 메인 GUI 열기"));
-        p.sendMessage(color("&e/유저상점 등록 &f<가격> <갯수> <슬롯> &7- 손 아이템 등록 (등록권 소모)"));
-        p.sendMessage(color("&e/유저상점 등록취소 &f<슬롯> &7- 해당 슬롯 등록 취소"));
-        p.sendMessage(color("&e/유저상점 확장 &7- 확장권 1개 소모, 슬롯 +9"));
-        if (isAdmin) {
-            p.sendMessage(color("&8-------------------------"));
-            p.sendMessage(color("&c[관리자] /유저상점 설정 ... (기존과 동일)"));
-        }
+    if (asub.equalsIgnoreCase("등록권")) {
+        boolean ok = com.minkang.ultimate.usershop.util.ItemUtil.applyTemplateFromItem(plugin, "tickets.register", p.getInventory().getItemInMainHand());
+        p.sendMessage(ok ? color("&a등록권 템플릿이 갱신되었습니다.") : color("&c손에 든 아이템이 없습니다."));
+        return true;
     }
+    if (asub.equalsIgnoreCase("확장권")) {
+        boolean ok = com.minkang.ultimate.usershop.util.ItemUtil.applyTemplateFromItem(plugin, "tickets.expand", p.getInventory().getItemInMainHand());
+        p.sendMessage(ok ? color("&a확장권 템플릿이 갱신되었습니다.") : color("&c손에 든 아이템이 없습니다."));
+        return true;
+    }
+    if (asub.equalsIgnoreCase("제거")) {
+        if (args.length == 3) {
+            int sslot;
+            try { sslot = Integer.parseInt(args[2]); } catch (Exception e) { p.sendMessage(color("&c슬롯은 숫자여야 합니다.")); return true; }
+            java.util.UUID target = p.getUniqueId();
+            com.minkang.ultimate.usershop.gui.GUIManager.ViewContext vc = guiManager.getViewContext(p);
+            if (vc != null && vc.mode == com.minkang.ultimate.usershop.gui.GUIManager.Mode.SHOP && vc.owner != null) target = vc.owner;
+            boolean ok = shopManager.adminRemoveListing(target, sslot);
+            p.sendMessage(ok ? color("&a강제 제거 완료 (대상: " + target + ", 슬롯: " + sslot + ")") : color("&c지정 슬롯에 등록이 없습니다."));
+            return true;
+        }
+        if (args.length >= 4) {
+            org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(args[2]);
+            if (op == null || op.getUniqueId() == null) { p.sendMessage(color("&c플레이어를 찾을 수 없습니다.")); return true; }
+            int sslot; try { sslot = Integer.parseInt(args[3]); } catch (Exception e) { p.sendMessage(color("&c슬롯은 숫자여야 합니다.")); return true; }
+            boolean ok = shopManager.adminRemoveListing(op.getUniqueId(), sslot);
+            p.sendMessage(ok ? color("&a강제 제거 완료 (대상: " + (op.getName()!=null?op.getName():op.getUniqueId()) + ", 슬롯: " + sslot + ")") : color("&c지정 슬롯에 등록이 없습니다."));
+            return true;
+        }
+        p.sendMessage(color("&c사용법: /유저상점 설정 제거 <슬롯> 또는 /유저상점 설정 제거 <플레이어> <슬롯>"));
+        return true;
+    }
+    if (asub.equalsIgnoreCase("확장삭제")) {
+        if (args.length < 4) { p.sendMessage(color("&c사용법: /유저상점 설정 확장삭제 <플레이어> <횟수(1~6)>")); return true; }
+        org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(args[2]);
+        if (op == null || op.getUniqueId() == null) { p.sendMessage(color("&c플레이어를 찾을 수 없습니다.")); return true; }
+        int times; try { times = Integer.parseInt(args[3]); } catch (Exception e) { p.sendMessage(color("&c횟수는 숫자여야 합니다.")); return true; }
+        if (times < 1) times = 1; if (times > 6) times = 6;
+        int newCap = shopManager.reduceCapacity(op.getUniqueId(), times * 9);
+        p.sendMessage(color("&a" + (op.getName()!=null?op.getName():op.getUniqueId()) + "님의 슬롯이 " + (times*9) + "만큼 감소. 현재 슬롯: " + newCap));
+        return true;
+    }
+    sendAdminHelp(p);
+    return true;
 }
