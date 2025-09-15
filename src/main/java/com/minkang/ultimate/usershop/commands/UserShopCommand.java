@@ -158,3 +158,5 @@ public class UserShopCommand implements CommandExecutor {
     sendAdminHelp(p);
     return true;
 }
+}
+}
