@@ -1,0 +1,42 @@
+gui:
+  rows: 6
+  controls:
+    prev-slot: 45
+    search-slot: 49
+    next-slot: 53
+    items:
+      prev:
+        name: '&7이전 페이지'
+        material: ARROW
+      search:
+        name: '&b검색 (클릭 후 채팅에 입력)'
+        material: COMPASS
+      next:
+        name: '&7다음 페이지'
+        material: ARROW
+settings:
+  realtime_refresh:
+    enable: true
+    debounce_ticks: 3
+  vouchers:
+    register:
+      name: null
+      lore: []
+    expand:
+      name: null
+      lore: []
+  opener-item:
+    name: null
+    lore: []
+format:
+  lore:
+    seller: '&7판매자: &f{seller}'
+    price: '&b{price}&7/개'
+  chat:
+    registered: '&e[상점] &f{seller}&7 님이 &a{item}&7 {qty}개를 &b{price}&7에 등록했습니다.'
+name-map:
+  diamond: 다이아몬드
+  diamond sword: 다이아몬드 검
+  iron ingot: 철 주괴
+  gold ingot: 금 주괴
+  pokeball: 몬스터볼
