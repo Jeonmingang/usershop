@@ -159,8 +159,6 @@ public class UserShopCommand implements CommandExecutor {
     return true;
 }
 }
-}
-
 
 private void sendAdminHelp(Player p) {
     p.sendMessage(color("&8-------------------------"));
@@ -171,4 +169,5 @@ private void sendAdminHelp(Player p) {
     p.sendMessage(color("&e/유저상점 설정 제거 &f<슬롯> &7- 현재 상점 또는 본인 상점 슬롯 강제 제거"));
     p.sendMessage(color("&e/유저상점 설정 제거 &f<플레이어> <슬롯> &7- 대상 상점 슬롯 강제 제거"));
     p.sendMessage(color("&e/유저상점 설정 확장삭제 &f<플레이어> <횟수(1~6)> &7- 슬롯 9*횟수 감소"));
+}
 }
