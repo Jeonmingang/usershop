@@ -46,10 +46,6 @@ public class VaultHook {
         if (economy.getBalance(p) < amount) return false;
         return economy.withdrawPlayer(p, amount).transactionSuccess();
     }
-        if (!isOk()) return false;
-        if (economy.getBalance(p) < amount) return false;
-        return economy.withdrawPlayer(p, amount).transactionSuccess();
-    }
 
     public boolean deposit(OfflinePlayer p, double amount) {
         if (!isOk()) return false;
@@ -57,9 +53,6 @@ public class VaultHook {
     }
 
     public boolean deposit(Player p, double amount) {
-        if (!isOk()) return false;
-        return economy.depositPlayer(p, amount).transactionSuccess();
-    }
         if (!isOk()) return false;
         return economy.depositPlayer(p, amount).transactionSuccess();
     }
