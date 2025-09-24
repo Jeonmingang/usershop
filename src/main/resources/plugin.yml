@@ -1,6 +1,6 @@
 name: UltimateUserShop
 main: com.minkang.ultimate.usershop.Main
-version: 2.1.1
+version: 2.1.2
 api-version: 1.16
 authors: [ "Mingang Jeon", "Ultimate Team" ]
 commands:

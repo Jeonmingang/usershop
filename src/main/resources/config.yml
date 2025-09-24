@@ -113,3 +113,6 @@ fees:
 expiry:
   days: 5
   recent-hours: 24
+
+messages:
+  register-fee-charged: "&6등록 수수료 &e{fee}&6원이 차감되었습니다."
