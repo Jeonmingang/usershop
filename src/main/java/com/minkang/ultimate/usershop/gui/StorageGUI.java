@@ -48,9 +48,19 @@ public class StorageGUI implements InventoryHolder {
         if (raw < 0 || raw >= inv.getSize()) return;
         ItemStack it = inv.getItem(raw);
         if (it == null) return;
-        if (ItemUtils.giveItem(viewer, it.clone())) {
+        org.bukkit.inventory.ItemStack left = com.minkang.ultimate.usershop.util.ItemUtils.giveItemReturnLeftover(viewer, it);
+        if (left == null) {
+            // fully moved to player
             plugin.getShopManager().removeFromStorage(viewer.getUniqueId(), it);
             inv.setItem(raw, null);
+        } else if (left.getAmount() == it.getAmount()) {
+            // nothing moved
+            viewer.sendMessage(com.minkang.ultimate.usershop.Main.color("&c인벤토리에 공간이 부족합니다."));
+        } else {
+            // partial moved: remove original and put leftover back
+            plugin.getShopManager().removeFromStorage(viewer.getUniqueId(), it);
+            plugin.getShopManager().addToStorage(viewer.getUniqueId(), left);
+            inv.setItem(raw, left);
         }
     }
 }

@@ -60,14 +60,10 @@ public class ItemUtils {
     }
 
     public static boolean giveItem(Player p, ItemStack item) {
-        Inventory inv = p.getInventory();
-        if (inv.firstEmpty() == -1) {
-            // try stacking
-            inv.addItem(item.clone()); // Bukkit will drop if full in some servers; be safe:
-            if (inv.firstEmpty() == -1) {
-                p.getWorld().dropItemNaturally(p.getLocation(), item.clone());
-                return false;
-            }
+        // Robust: rely on addItem's leftover; NEVER auto-drop here.
+        java.util.Map<Integer, org.bukkit.inventory.ItemStack> leftover = p.getInventory().addItem(item.clone());
+        return leftover == null || leftover.isEmpty();
+    }
             return true;
         } else {
             inv.addItem(item.clone());
@@ -127,4 +123,16 @@ public class ItemUtils {
         t = t.replace(" ", "");
         return t;
     }
-}
+
+    public static org.bukkit.inventory.ItemStack giveItemReturnLeftover(Player p, ItemStack item) {
+        java.util.Map<Integer, org.bukkit.inventory.ItemStack> leftover = p.getInventory().addItem(item.clone());
+        if (leftover == null || leftover.isEmpty()) return null;
+        // Combine leftovers to single stack (Bukkit returns map of slot->stack)
+        org.bukkit.inventory.ItemStack rem = null;
+        for (org.bukkit.inventory.ItemStack s : leftover.values()) {
+            if (rem == null) rem = s.clone();
+            else rem.setAmount(rem.getAmount() + s.getAmount());
+        }
+        return rem;
+    }
+    }
