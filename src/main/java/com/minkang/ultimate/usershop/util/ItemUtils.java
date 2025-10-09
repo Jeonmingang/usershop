@@ -4,49 +4,44 @@ import com.minkang.ultimate.usershop.Main;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 /**
- * Utility helpers for items & inventories.
- * This file replaces a broken version that contained ellipsis and unbalanced braces.
+ * Clean, compilable ItemUtils (no drops, no broken ellipsis).
  */
 public class ItemUtils {
 
-    /** Normalize text for search (NFD + remove diacritics, toLower). */
+    /** Normalize string for search/filter. */
     public static String normalize(String s) {
         if (s == null) return "";
         String n = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
         return n.toLowerCase(Locale.ROOT);
     }
 
-    /** Pretty name for displaying an item. */
+    /** Display-friendly name. */
     public static String getPrettyName(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) return "AIR";
         ItemMeta meta = item.getItemMeta();
         if (meta != null && meta.hasDisplayName()) return meta.getDisplayName();
-        // Player head owner hint
         if (meta instanceof SkullMeta) {
-            SkullMeta sm = (SkullMeta) meta;
-            OfflinePlayer owner = sm.getOwningPlayer();
-            if (owner != null) return "머리(" + owner.getName() + ")";
+            OfflinePlayer op = ((SkullMeta) meta).getOwningPlayer();
+            if (op != null) return "머리(" + op.getName() + ")";
         }
-        String mat = item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' ');
-        return mat;
+        return item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 
-    /** Compare two items ignoring amount. */
+    /** Compare similarity ignoring amount. */
     public static boolean isSimilarIgnoreAmount(ItemStack a, ItemStack b) {
         if (a == null || b == null) return false;
         if (a.getType() != b.getType()) return false;
@@ -55,7 +50,7 @@ public class ItemUtils {
         return ca.isSimilar(cb);
     }
 
-    /** Remove one matching stack from player inventory; returns true if something was consumed. */
+    /** Consume one matching item from player's inventory. */
     public static boolean consumeOne(Player p, ItemStack target) {
         if (p == null || target == null) return false;
         Inventory inv = p.getInventory();
@@ -63,25 +58,21 @@ public class ItemUtils {
             ItemStack cur = inv.getItem(i);
             if (cur == null) continue;
             if (isSimilarIgnoreAmount(cur, target) && cur.getAmount() > 0) {
-                if (cur.getAmount() == 1) {
-                    inv.setItem(i, null);
-                } else {
-                    cur.setAmount(cur.getAmount() - 1);
-                    inv.setItem(i, cur);
-                }
+                if (cur.getAmount() == 1) inv.setItem(i, null);
+                else { cur.setAmount(cur.getAmount() - 1); inv.setItem(i, cur); }
                 return true;
             }
         }
         return false;
     }
 
-    /** Give item; returns true when nothing left (NEVER drop). */
+    /** Give item; true if fully inserted (never drop). */
     public static boolean giveItem(Player p, ItemStack item) {
         Map<Integer, ItemStack> leftover = p.getInventory().addItem(item.clone());
         return leftover == null || leftover.isEmpty();
     }
 
-    /** Give and return leftover stack combined; null when fully inserted. */
+    /** Give item and return leftover combined; null if fully inserted. */
     public static ItemStack giveItemReturnLeftover(Player p, ItemStack item) {
         Map<Integer, ItemStack> leftover = p.getInventory().addItem(item.clone());
         if (leftover == null || leftover.isEmpty()) return null;
@@ -94,7 +85,7 @@ public class ItemUtils {
         return rem;
     }
 
-    /** Build an icon item from config: material, name, lore, skull-owner(optional). */
+    /** Build icon from config (material, name, lore, skull owner). */
     public static ItemStack iconFromCfg(ConfigurationSection sec) {
         String matName = sec.getString("material", "STONE");
         Material mat = Material.matchMaterial(matName);
@@ -104,12 +95,11 @@ public class ItemUtils {
         if (meta != null) {
             if (sec.isString("name")) meta.setDisplayName(Main.color(sec.getString("name")));
             if (sec.isList("lore")) {
-                List<String> colored = new ArrayList<>();
-                for (String l : sec.getStringList("lore")) colored.add(Main.color(l));
-                meta.setLore(colored);
+                List<String> lore = new ArrayList<>();
+                for (String l : sec.getStringList("lore")) lore.add(Main.color(l));
+                meta.setLore(lore);
             }
             if (meta instanceof SkullMeta && sec.isString("owner")) {
-                // set skull owner if provided (1.16+ OwningPlayer is preferred)
                 try {
                     OfflinePlayer op = Bukkit.getOfflinePlayer(sec.getString("owner"));
                     ((SkullMeta) meta).setOwningPlayer(op);
