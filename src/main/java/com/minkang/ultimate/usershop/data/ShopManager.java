@@ -22,6 +22,7 @@ public class ShopManager {
 
     private final Main plugin;
     private final File dataDir;
+    private final java.io.File storageFile;
     private final Map<UUID, PlayerShop> shops = new ConcurrentHashMap<>();
     private final Set<UUID> searchWaiting = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
 
@@ -29,11 +30,14 @@ public class ShopManager {
         this.plugin = plugin;
         this.dataDir = new File(plugin.getDataFolder(), "shops");
         if (!dataDir.exists()) dataDir.mkdirs();
+        this.storageFile = new java.io.File(plugin.getDataFolder(), "storage.yml");
     }
 
     public void loadAll() {
+        loadStorage();
         File[] files = dataDir.listFiles((dir, name) -> name.endsWith(".yml"));
-        if (files == null) return;
+        if (files == null) return; // patched
+        
         for (File f : files) {
             try {
                 YamlConfiguration yml = YamlConfiguration.loadConfiguration(f);
@@ -44,12 +48,43 @@ public class ShopManager {
                 plugin.getLogger().warning("Failed to load shop file: " + f.getName() + " - " + ex.getMessage());
             }
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
+    }
+
+
+    private void loadStorage() {
+        try {
+            if (storageFile.exists()) {
+                org.bukkit.configuration.file.YamlConfiguration yml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(storageFile);
+                this.storage.clear();
+                for (String key : yml.getKeys(false)) {
+                    try {
+                        java.util.UUID id = java.util.UUID.fromString(key);
+                        java.util.List<org.bukkit.inventory.ItemStack> lst = new java.util.ArrayList<>();
+                        java.util.List<?> raw = yml.getList(key);
+                        if (raw != null) {
+                            for (Object o : raw) {
+                                if (o instanceof org.bukkit.inventory.ItemStack) {
+                                    lst.add(((org.bukkit.inventory.ItemStack) o).clone());
+                                }
+                            }
+                        }
+                        this.storage.put(id, lst);
+                    } catch (Exception ignore) {}
+                }
+            }
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Failed to load storage.yml: " + ex.getMessage());
+        }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
     public void saveAll() {
+        saveStorage();
         for (PlayerShop ps : shops.values()) {
             save(ps);
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
     private void save(PlayerShop ps) {
@@ -61,9 +96,23 @@ public class ShopManager {
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save shop: " + e.getMessage());
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
-    public PlayerShop getOrCreateShop(UUID uuid) {
+    
+    private void saveStorage() {
+        try {
+            org.bukkit.configuration.file.YamlConfiguration yml = new org.bukkit.configuration.file.YamlConfiguration();
+            for (java.util.Map.Entry<java.util.UUID, java.util.List<org.bukkit.inventory.ItemStack>> e : storage.entrySet()) {
+                yml.set(e.getKey().toString(), e.getValue());
+            }
+            yml.save(storageFile);
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Failed to save storage.yml: " + ex.getMessage());
+        }
+        try { saveStorage(); } catch (Throwable ignored) {}
+    }
+public PlayerShop getOrCreateShop(UUID uuid) {
         if (!shops.containsKey(uuid)) {
             PlayerShop ps = new PlayerShop(uuid);
             ps.setSlots(plugin.getConfig().getInt("settings.base-slots", 9));
@@ -119,6 +168,7 @@ if (prev != null) {
             String msg = "📦 등록: **" + seller + "** — " + itemName + " x" + amount + " | 가격: " + price;
             notifyDiscord(msg);
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
 
@@ -148,15 +198,18 @@ if (prev != null) {
                 }
             }
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
     public void handlePurchase(Player buyer, UUID sellerId, int slot, int amount) {
         PlayerShop shop = getOrCreateShop(sellerId);
         Listing listing = shop.getListings().get(slot);
-        if (listing == null) return;
+        if (listing == null) return; // patched
+        
         if (listing.getStock() <= 0) {
             buyer.sendMessage(Main.getInstance().msg("out-of-stock"));
-            return;
+            return; // patched
+        
         }
         int buyAmount = amount;
         if (buyAmount > 64) buyAmount = 64;
@@ -165,7 +218,8 @@ if (prev != null) {
         if (buyAmount > maxStack) buyAmount = maxStack;
         if (buyAmount <= 0) {
             buyer.sendMessage(Main.getInstance().msg("out-of-stock"));
-            return;
+            return; // patched
+        
         }
 
         double priceEach = listing.getPrice();
@@ -174,17 +228,20 @@ if (prev != null) {
         VaultHook vault = plugin.getVault();
         if (vault == null || !vault.isOk()) {
             buyer.sendMessage(Main.color("&c경제 플러그인이 연결되어 있지 않습니다."));
-            return;
+            return; // patched
+        
         }
 
         if (!vault.has(buyer, total)) {
             buyer.sendMessage(Main.getInstance().msg("purchase-not-enough").replace("{need}", String.valueOf(total)));
-            return;
+            return; // patched
+        
         }
 
         if (!vault.withdraw(buyer, total)) {
             buyer.sendMessage(Main.getInstance().msg("purchase-not-enough").replace("{need}", String.valueOf(total)));
-            return;
+            return; // patched
+        
         }
 
         OfflinePlayer seller = Bukkit.getOfflinePlayer(sellerId);
@@ -214,6 +271,7 @@ addToStorage(buyer.getUniqueId(), give);
                     .replace("{amount}", String.valueOf(buyAmount))
                     .replace("{paid}", String.valueOf(total)));
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
     public void setWaitingSearch(UUID id, boolean waiting) {
@@ -242,17 +300,39 @@ addToStorage(buyer.getUniqueId(), give);
 
     public void addToStorage(java.util.UUID uuid, org.bukkit.inventory.ItemStack item) {
         getStorage(uuid).add(item.clone());
+        try { saveStorage(); } catch (Throwable ignored) {}
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
-    public void removeFromStorage(java.util.UUID uuid, org.bukkit.inventory.ItemStack item) {
-        java.util.List<org.bukkit.inventory.ItemStack> lst = getStorage(uuid);
-        for (int i=0;i<lst.size();i++) {
-            org.bukkit.inventory.ItemStack it = lst.get(i);
-            if (it.isSimilar(item) && it.getAmount() == item.getAmount()) {
-                lst.remove(i);
-                break;
-            }
+    
+public void removeFromStorage(java.util.UUID uuid, org.bukkit.inventory.ItemStack item) {
+    java.util.List<org.bukkit.inventory.ItemStack> lst = getStorage(uuid);
+    // Prefer exact match first
+    for (int i = 0; i < lst.size(); i++) {
+        org.bukkit.inventory.ItemStack it = lst.get(i);
+        if (it.isSimilar(item) && it.getAmount() == item.getAmount()) {
+            lst.remove(i);
+            return; // patched
+        
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
+    }
+    // Fallback: remove first similar item that contains at least this amount
+    for (int i = 0; i < lst.size(); i++) {
+        org.bukkit.inventory.ItemStack it = lst.get(i);
+        if (it.isSimilar(item) && it.getAmount() >= item.getAmount()) {
+            int remain = it.getAmount() - item.getAmount();
+            if (remain <= 0) lst.remove(i);
+            else it.setAmount(remain);
+            return; // patched
+        
+        }
+        try { saveStorage(); } catch (Throwable ignored) {}
+    }
+}
+
+        }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
     public void sweepExpired() {
@@ -272,15 +352,18 @@ addToStorage(buyer.getUniqueId(), give);
             for (Integer key : toRemove) map.remove(key);
             if (!toRemove.isEmpty()) save(ps);
         }
+        try { saveStorage(); } catch (Throwable ignored) {}
     }
 
 
     private void notifyDiscord(String text) {
         org.bukkit.configuration.file.FileConfiguration cfg = plugin.getConfig();
         boolean enabled = cfg.getBoolean("discord.enabled", false);
-        if (!enabled) return;
+        if (!enabled) return; // patched
+        
         String url = cfg.getString("discord.webhook-url", "");
-        if (url == null || url.isEmpty()) return;
+        if (url == null || url.isEmpty()) return; // patched
+        
         com.minkang.ultimate.usershop.util.DiscordWebhook.send(url, text);
     }
     
