@@ -93,10 +93,19 @@ public void registerListing(Player player, PlayerShop shop, ItemStack item, int 
         // SAFETY: prevent item loss when registering to an occupied slot.
         java.util.Map<Integer, com.minkang.ultimate.usershop.model.Listing> map = shop.getListings();
         com.minkang.ultimate.usershop.model.Listing prev = map.get(slot);
-        if (prev != null) {
-            // refund previous listing item(s) to owner's storage instead of dropping/losing them
-            addToStorage(shop.getOwner(), prev.getItem());
-        }
+if (prev != null) {
+    // Refund entire stock of previous listing into owner's storage
+    org.bukkit.inventory.ItemStack template = prev.getItem().clone();
+    int remaining = prev.getStock();
+    int maxStack = template.getMaxStackSize();
+    while (remaining > 0) {
+        int chunk = Math.min(remaining, maxStack);
+        org.bukkit.inventory.ItemStack part = template.clone();
+        part.setAmount(chunk);
+        addToStorage(shop.getOwner(), part);
+        remaining -= chunk;
+    }
+}
         ItemStack clone = item.clone();
         clone.setAmount(amount);
         com.minkang.ultimate.usershop.model.Listing listing = new com.minkang.ultimate.usershop.model.Listing(clone, price, amount, System.currentTimeMillis());
@@ -164,14 +173,9 @@ public void registerListing(Player player, PlayerShop shop, ItemStack item, int 
         vault.deposit(seller, total);
 
         ItemStack give = listing.getItem().clone();
-        give.setAmount(buyAmount);
-        boolean ok = ItemUtils.giveItem(buyer, give);
-        if (!ok) {
-            vault.deposit(buyer, total);
-            if (seller != null) vault.withdraw(seller, total);
-            buyer.sendMessage(Main.getInstance().msg("inventory-full"));
-            return;
-        }
+give.setAmount(buyAmount);
+// Deliver to personal storage instead of directly to inventory
+addToStorage(buyer.getUniqueId(), give);
 
         listing.setStock(listing.getStock() - buyAmount);
         if (listing.getStock() <= 0) {
