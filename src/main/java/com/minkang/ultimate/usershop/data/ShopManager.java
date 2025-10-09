@@ -4,6 +4,7 @@ import com.minkang.ultimate.usershop.Main;
 import com.minkang.ultimate.usershop.model.Listing;
 import com.minkang.ultimate.usershop.model.PlayerShop;
 import com.minkang.ultimate.usershop.util.ItemUtils;
+import com.minkang.ultimate.usershop.util.DiscordWebhook;
 import com.minkang.ultimate.usershop.util.VaultHook;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -111,6 +112,13 @@ if (prev != null) {
         com.minkang.ultimate.usershop.model.Listing listing = new com.minkang.ultimate.usershop.model.Listing(clone, price, amount, System.currentTimeMillis());
         map.put(slot, listing);
         save(shop);
+        // Discord webhook on register
+        if (plugin.getConfig().getBoolean("discord.on-register", true)) {
+            String itemName = com.minkang.ultimate.usershop.util.ItemUtils.getPrettyName(clone);
+            String seller = player.getName();
+            String msg = "📦 등록: **" + seller + "** — " + itemName + " x" + amount + " | 가격: " + price;
+            notifyDiscord(msg);
+        }
     }
 
 
@@ -255,4 +263,15 @@ addToStorage(buyer.getUniqueId(), give);
             if (!toRemove.isEmpty()) save(ps);
         }
     }
+
+
+    private void notifyDiscord(String text) {
+        org.bukkit.configuration.file.FileConfiguration cfg = plugin.getConfig();
+        boolean enabled = cfg.getBoolean("discord.enabled", false);
+        if (!enabled) return;
+        String url = cfg.getString("discord.webhook-url", "");
+        if (url == null || url.isEmpty()) return;
+        com.minkang.ultimate.usershop.util.DiscordWebhook.send(url, text);
+    }
+    
 }

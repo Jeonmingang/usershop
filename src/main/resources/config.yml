@@ -114,3 +114,10 @@ fees:
 expiry:
   days: 5
   recent-hours: 24
+
+
+discord:
+  webhook-url: ""
+  enabled: true
+  on-register: true
+  on-purchase: true
