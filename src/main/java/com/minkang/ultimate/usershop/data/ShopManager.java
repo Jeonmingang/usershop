@@ -130,11 +130,18 @@ if (prev != null) {
             save(shop);
             if (player.isOnline()) {
                 Player online = (Player) player;
-                if (refundItem) ItemUtils.giveItem(online, listing.getItem());
+                if (refundItem) {
+                org.bukkit.inventory.ItemStack _it = listing.getItem().clone();
+                org.bukkit.inventory.ItemStack _left = com.minkang.ultimate.usershop.util.ItemUtils.giveItemReturnLeftover(online, _it);
+                if (_left != null) addToStorage(online.getUniqueId(), _left);
+            }
                 if (refundTicket) {
                     String b64 = plugin.getConfig().getString("items.register-ticket", "");
                     ItemStack ticket = com.minkang.ultimate.usershop.util.ItemSerializer.deserializeFromBase64(b64);
-                    if (ticket != null) ItemUtils.giveItem(online, ticket);
+                    if (ticket != null) {
+                        org.bukkit.inventory.ItemStack _left2 = com.minkang.ultimate.usershop.util.ItemUtils.giveItemReturnLeftover(online, ticket);
+                        if (_left2 != null) addToStorage(online.getUniqueId(), _left2);
+                    }
                 }
             }
         }

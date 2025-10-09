@@ -146,7 +146,10 @@ public class UserShopCommand implements CommandExecutor {
             int next = current + step;
             if (next > max) {
                 p.sendMessage(plugin.msg("max-expanded").replace("{max}", String.valueOf(max)));
-                ItemUtils.giveItem(p, ticket);
+                {
+                        org.bukkit.inventory.ItemStack _left3 = com.minkang.ultimate.usershop.util.ItemUtils.giveItemReturnLeftover(p, ticket);
+                        if (_left3 != null) com.minkang.ultimate.usershop.Main.getInstance().getShopManager().addToStorage(p.getUniqueId(), _left3);
+                    }
                 return true;
             }
             sm.setSlotCount(p.getUniqueId(), next);
