@@ -15,96 +15,59 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
+/**
+ * Utility helpers for items & inventories.
+ * This file replaces a broken version that contained ellipsis and unbalanced braces.
+ */
 public class ItemUtils {
 
-    public static ItemStack playerHead(OfflinePlayer op) {
-        ItemStack head = new ItemStack(Material.PLAYER_HEAD, 1);
-        ItemMeta meta = head.getItemMeta();
+    /** Normalize text for search (NFD + remove diacritics, toLower). */
+    public static String normalize(String s) {
+        if (s == null) return "";
+        String n = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        return n.toLowerCase(Locale.ROOT);
+    }
+
+    /** Pretty name for displaying an item. */
+    public static String getPrettyName(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return "AIR";
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null && meta.hasDisplayName()) return meta.getDisplayName();
+        // Player head owner hint
         if (meta instanceof SkullMeta) {
             SkullMeta sm = (SkullMeta) meta;
-            sm.setOwningPlayer(op);
-            head.setItemMeta(sm);
+            OfflinePlayer owner = sm.getOwningPlayer();
+            if (owner != null) return "머리(" + owner.getName() + ")";
         }
-        return head;
-    }
-
-    public static ItemStack iconFromCfg(Main plugin, String path) {
-        ConfigurationSection sec = plugin.getConfig().getConfigurationSection(path);
-        if (sec == null) return new ItemStack(Material.BARRIER);
-        String mat = sec.getString("material", "BARRIER");
-        ItemStack it;
-        try {
-            it = new ItemStack(Material.valueOf(mat.toUpperCase(Locale.ROOT)));
-        } catch (Exception ex) {
-            it = new ItemStack(Material.BARRIER);
-        }
-        ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Main.color(sec.getString("name", "")));
-        List<String> lore = new ArrayList<>();
-        for (String l : sec.getStringList("lore")) {
-            lore.add(Main.color(l));
-        }
-        meta.setLore(lore);
-        it.setItemMeta(meta);
-        return it;
-    }
-
-    public static String getPrettyName(ItemStack item) {
-        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            return item.getItemMeta().getDisplayName().replace("§", "&");
-        }
-        // fallback to material name
-        String mat = item.getType().name().toLowerCase(Locale.ROOT).replace("_", " ");
+        String mat = item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' ');
         return mat;
     }
 
-    public static boolean giveItem(Player p, ItemStack item) {
-        // Robust: rely on addItem's leftover; NEVER auto-drop here.
-        java.util.Map<Integer, org.bukkit.inventory.ItemStack> leftover = p.getInventory().addItem(item.clone());
-        return leftover == null || leftover.isEmpty();
-    }
-            return true;
-        } else {
-            inv.addItem(item.clone());
-            return true;
-        }
-    }
-
+    /** Compare two items ignoring amount. */
     public static boolean isSimilarIgnoreAmount(ItemStack a, ItemStack b) {
         if (a == null || b == null) return false;
         if (a.getType() != b.getType()) return false;
-        if (a.hasItemMeta() != b.hasItemMeta()) return false;
-        if (a.hasItemMeta()) {
-            ItemMeta am = a.getItemMeta();
-            ItemMeta bm = b.getItemMeta();
-            String an = am.hasDisplayName() ? am.getDisplayName() : "";
-            String bn = bm.hasDisplayName() ? bm.getDisplayName() : "";
-            if (!an.equals(bn)) return false;
-            List<String> al = am.getLore();
-            List<String> bl = bm.getLore();
-            if (al == null) al = new ArrayList<String>();
-            if (bl == null) bl = new ArrayList<String>();
-            if (al.size() != bl.size()) return false;
-            for (int i=0;i<al.size();i++) {
-                if (!al.get(i).equals(bl.get(i))) return false;
-            }
-        }
-        return true;
+        ItemStack ca = a.clone(); ca.setAmount(1);
+        ItemStack cb = b.clone(); cb.setAmount(1);
+        return ca.isSimilar(cb);
     }
 
+    /** Remove one matching stack from player inventory; returns true if something was consumed. */
     public static boolean consumeOne(Player p, ItemStack target) {
+        if (p == null || target == null) return false;
         Inventory inv = p.getInventory();
         for (int i = 0; i < inv.getSize(); i++) {
-            ItemStack it = inv.getItem(i);
-            if (it == null) continue;
-            if (isSimilarIgnoreAmount(it, target)) {
-                int amt = it.getAmount();
-                if (amt <= 1) inv.setItem(i, null);
-                else {
-                    ItemStack copy = it.clone();
-                    copy.setAmount(amt - 1);
-                    inv.setItem(i, copy);
+            ItemStack cur = inv.getItem(i);
+            if (cur == null) continue;
+            if (isSimilarIgnoreAmount(cur, target) && cur.getAmount() > 0) {
+                if (cur.getAmount() == 1) {
+                    inv.setItem(i, null);
+                } else {
+                    cur.setAmount(cur.getAmount() - 1);
+                    inv.setItem(i, cur);
                 }
                 return true;
             }
@@ -112,27 +75,48 @@ public class ItemUtils {
         return false;
     }
 
-    // Normalize Korean/Japanese/English strings for fuzzy search
-    public static String normalize(String s) {
-        String t = s==null ? "" : s;
-        t = t.toLowerCase(Locale.ROOT);
-        t = t.replace("§", "");
-        t = t.replace("&", "");
-        t = Normalizer.normalize(t, Normalizer.Form.NFKD);
-        // basic strip spaces
-        t = t.replace(" ", "");
-        return t;
+    /** Give item; returns true when nothing left (NEVER drop). */
+    public static boolean giveItem(Player p, ItemStack item) {
+        Map<Integer, ItemStack> leftover = p.getInventory().addItem(item.clone());
+        return leftover == null || leftover.isEmpty();
     }
 
-    public static org.bukkit.inventory.ItemStack giveItemReturnLeftover(Player p, ItemStack item) {
-        java.util.Map<Integer, org.bukkit.inventory.ItemStack> leftover = p.getInventory().addItem(item.clone());
+    /** Give and return leftover stack combined; null when fully inserted. */
+    public static ItemStack giveItemReturnLeftover(Player p, ItemStack item) {
+        Map<Integer, ItemStack> leftover = p.getInventory().addItem(item.clone());
         if (leftover == null || leftover.isEmpty()) return null;
-        // Combine leftovers to single stack (Bukkit returns map of slot->stack)
-        org.bukkit.inventory.ItemStack rem = null;
-        for (org.bukkit.inventory.ItemStack s : leftover.values()) {
+        ItemStack rem = null;
+        for (ItemStack s : leftover.values()) {
+            if (s == null) continue;
             if (rem == null) rem = s.clone();
             else rem.setAmount(rem.getAmount() + s.getAmount());
         }
         return rem;
     }
+
+    /** Build an icon item from config: material, name, lore, skull-owner(optional). */
+    public static ItemStack iconFromCfg(ConfigurationSection sec) {
+        String matName = sec.getString("material", "STONE");
+        Material mat = Material.matchMaterial(matName);
+        if (mat == null) mat = Material.STONE;
+        ItemStack item = new ItemStack(mat, sec.getInt("amount", 1));
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            if (sec.isString("name")) meta.setDisplayName(Main.color(sec.getString("name")));
+            if (sec.isList("lore")) {
+                List<String> colored = new ArrayList<>();
+                for (String l : sec.getStringList("lore")) colored.add(Main.color(l));
+                meta.setLore(colored);
+            }
+            if (meta instanceof SkullMeta && sec.isString("owner")) {
+                // set skull owner if provided (1.16+ OwningPlayer is preferred)
+                try {
+                    OfflinePlayer op = Bukkit.getOfflinePlayer(sec.getString("owner"));
+                    ((SkullMeta) meta).setOwningPlayer(op);
+                } catch (Throwable ignored) {}
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
     }
+}
