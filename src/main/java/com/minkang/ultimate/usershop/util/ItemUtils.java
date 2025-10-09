@@ -25,7 +25,7 @@ public class ItemUtils {
     /** Normalize string for search/filter. */
     public static String normalize(String s) {
         if (s == null) return "";
-        String n = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\p{M}+", "");
+        String n = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
         return n.toLowerCase(Locale.ROOT);
     }
 
