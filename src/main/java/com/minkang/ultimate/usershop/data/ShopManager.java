@@ -31,7 +31,7 @@ private final Map<UUID, PlayerShop> shops = new ConcurrentHashMap<>();
         this.plugin = plugin;
         this.dataDir = new File(plugin.getDataFolder(), "shops");
         if (!dataDir.exists()) dataDir.mkdirs();
-            this.storageFile = new java.io.File(plugin.getDataFolder(), \"storage.yml\");
+            this.storageFile = new java.io.File(plugin.getDataFolder(), "storage.yml");
 }
 
     public void loadAll() {
@@ -51,31 +51,31 @@ private final Map<UUID, PlayerShop> shops = new ConcurrentHashMap<>();
     }
 
     
-private void loadStorage() {
-    try {
-        if (storageFile.exists()) {
-            org.bukkit.configuration.file.YamlConfiguration yml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(storageFile);
-            this.storage.clear();
-            for (String key : yml.getKeys(false)) {
-                try {
-                    java.util.UUID id = java.util.UUID.fromString(key);
-                    java.util.List<org.bukkit.inventory.ItemStack> lst = new java.util.ArrayList<>();
-                    java.util.List<?> raw = yml.getList(key);
-                    if (raw != null) {
-                        for (Object o : raw) {
-                            if (o instanceof org.bukkit.inventory.ItemStack) {
-                                lst.add(((org.bukkit.inventory.ItemStack) o).clone());
+    private void loadStorage() {
+        try {
+            if (storageFile.exists()) {
+                org.bukkit.configuration.file.YamlConfiguration yml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(storageFile);
+                this.storage.clear();
+                for (String key : yml.getKeys(false)) {
+                    try {
+                        java.util.UUID id = java.util.UUID.fromString(key);
+                        java.util.List<org.bukkit.inventory.ItemStack> lst = new java.util.ArrayList<>();
+                        java.util.List<?> raw = yml.getList(key);
+                        if (raw != null) {
+                            for (Object o : raw) {
+                                if (o instanceof org.bukkit.inventory.ItemStack) {
+                                    lst.add(((org.bukkit.inventory.ItemStack) o).clone());
+                                }
                             }
                         }
-                    }
-                    this.storage.put(id, lst);
-                } catch (Exception ignore) {}
+                        this.storage.put(id, lst);
+                    } catch (Exception ignore) {}
+                }
             }
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Failed to load storage.yml: " + ex.getMessage());
         }
-    } catch (Exception ex) {
-        plugin.getLogger().warning("Failed to load storage.yml: " + ex.getMessage());
     }
-}
 public void saveAll() {
         saveStorage();
         for (PlayerShop ps : shops.values()) {
@@ -84,17 +84,17 @@ public void saveAll() {
     }
 
     
-private void saveStorage() {
-    try {
-        org.bukkit.configuration.file.YamlConfiguration yml = new org.bukkit.configuration.file.YamlConfiguration();
-        for (java.util.Map.Entry<java.util.UUID, java.util.List<org.bukkit.inventory.ItemStack>> e : storage.entrySet()) {
-            yml.set(e.getKey().toString(), e.getValue());
+    private void saveStorage() {
+        try {
+            org.bukkit.configuration.file.YamlConfiguration yml = new org.bukkit.configuration.file.YamlConfiguration();
+            for (java.util.Map.Entry<java.util.UUID, java.util.List<org.bukkit.inventory.ItemStack>> e : storage.entrySet()) {
+                yml.set(e.getKey().toString(), e.getValue());
+            }
+            yml.save(storageFile);
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Failed to save storage.yml: " + ex.getMessage());
         }
-        yml.save(storageFile);
-    } catch (Exception ex) {
-        plugin.getLogger().warning("Failed to save storage.yml: " + ex.getMessage());
     }
-}
 private void save(PlayerShop ps) {
         try {
             File f = new File(dataDir, ps.getOwner().toString() + ".yml");
@@ -288,32 +288,31 @@ addToStorage(buyer.getUniqueId(), give);
         saveStorage();
     }
 
+    public void removeFromStorage(java.util.UUID uuid, org.bukkit.inventory.ItemStack item) {
+        java.util.List<org.bukkit.inventory.ItemStack> lst = getStorage(uuid);
+        // Prefer exact match first
+        for (int i = 0; i < lst.size(); i++) {
+            org.bukkit.inventory.ItemStack it = lst.get(i);
+            if (it.isSimilar(item) && it.getAmount() == item.getAmount()) {
+                lst.remove(i);
+                saveStorage();
+                return;
+            }
+        }
+        // Fallback: consume from a larger similar stack
+        for (int i = 0; i < lst.size(); i++) {
+            org.bukkit.inventory.ItemStack it = lst.get(i);
+            if (it.isSimilar(item) && it.getAmount() >= item.getAmount()) {
+                int remain = it.getAmount() - item.getAmount();
+                if (remain <= 0) lst.remove(i);
+                else it.setAmount(remain);
+                saveStorage();
+                return;
+            }
+        }
+    }
     
-public void removeFromStorage(java.util.UUID uuid, org.bukkit.inventory.ItemStack item) {
-    java.util.List<org.bukkit.inventory.ItemStack> lst = getStorage(uuid);
-    // Prefer exact match first
-    for (int i = 0; i < lst.size(); i++) {
-        org.bukkit.inventory.ItemStack it = lst.get(i);
-        if (it.isSimilar(item) && it.getAmount() == item.getAmount()) {
-            lst.remove(i);
-            saveStorage();
-            return;
-        }
-    }
-    // Fallback: consume from a larger similar stack
-    for (int i = 0; i < lst.size(); i++) {
-        org.bukkit.inventory.ItemStack it = lst.get(i);
-        if (it.isSimilar(item) && it.getAmount() >= item.getAmount()) {
-            int remain = it.getAmount() - item.getAmount();
-            if (remain <= 0) lst.remove(i);
-            else it.setAmount(remain);
-            saveStorage();
-            return;
-        }
-    }
-}
-
-public void sweepExpired() {
+    public void sweepExpired() {
         int days = Main.getInstance().getConfig().getInt("expiry.days", 5);
         long ttl = days * 24L * 60L * 60L * 1000L;
         long now = System.currentTimeMillis();
