@@ -54,7 +54,8 @@ private final Map<UUID, PlayerShop> shops = new ConcurrentHashMap<>();
     private void loadStorage() {
         try {
             if (storageFile.exists()) {
-                org.bukkit.configuration.file.YamlConfiguration yml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(storageFile);
+                org.bukkit.configuration.file.YamlConfiguration yml =
+                        org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(storageFile);
                 this.storage.clear();
                 for (String key : yml.getKeys(false)) {
                     try {
@@ -96,16 +97,7 @@ private final Map<UUID, PlayerShop> shops = new ConcurrentHashMap<>();
             plugin.getLogger().warning("Failed to load storage.yml: " + ex.getMessage());
         }
     }
-    }
-                        }
-                        this.storage.put(id, lst);
-                    } catch (Exception ignore) {}
-                }
-            }
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Failed to load storage.yml: " + ex.getMessage());
-        }
-    }
+
 public void saveAll() {
         saveStorage();
         for (PlayerShop ps : shops.values()) {
@@ -129,11 +121,7 @@ public void saveAll() {
             plugin.getLogger().warning("Failed to save storage.yml: " + ex.getMessage());
         }
     }
-    yml.save(storageFile);
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Failed to save storage.yml: " + ex.getMessage());
-        }
-    }
+
 private void save(PlayerShop ps) {
         try {
             File f = new File(dataDir, ps.getOwner().toString() + ".yml");
