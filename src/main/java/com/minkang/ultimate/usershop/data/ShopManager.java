@@ -61,12 +61,42 @@ private final Map<UUID, PlayerShop> shops = new ConcurrentHashMap<>();
                         java.util.UUID id = java.util.UUID.fromString(key);
                         java.util.List<org.bukkit.inventory.ItemStack> lst = new java.util.ArrayList<>();
                         java.util.List<?> raw = yml.getList(key);
-                        if (raw != null) {
-                            for (Object o : raw) {
-                                if (o instanceof org.bukkit.inventory.ItemStack) {
-                                    lst.add(((org.bukkit.inventory.ItemStack) o).clone());
+                        if (raw != null && !raw.isEmpty()) {
+                            Object first = raw.get(0);
+                            if (first instanceof org.bukkit.inventory.ItemStack) {
+                                // legacy format: direct ItemStack list
+                                for (Object o : raw) {
+                                    if (o instanceof org.bukkit.inventory.ItemStack) {
+                                        lst.add(((org.bukkit.inventory.ItemStack) o).clone());
+                                    }
+                                }
+                            } else if (first instanceof String) {
+                                // new format: base64 strings
+                                for (Object o : raw) {
+                                    String s = (String) o;
+                                    org.bukkit.inventory.ItemStack it = com.minkang.ultimate.usershop.util.ItemSerializer.deserializeFromBase64(s);
+                                    if (it != null) lst.add(it);
+                                }
+                            } else {
+                                // safety: try per-index retrieval
+                                org.bukkit.configuration.ConfigurationSection sec = yml.getConfigurationSection(key);
+                                if (sec != null) {
+                                    for (String child : sec.getKeys(false)) {
+                                        org.bukkit.inventory.ItemStack it = yml.getItemStack(key + "." + child);
+                                        if (it != null) lst.add(it.clone());
+                                    }
                                 }
                             }
+                        }
+                        this.storage.put(id, lst);
+                    } catch (Exception ignore) {}
+                }
+            }
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Failed to load storage.yml: " + ex.getMessage());
+        }
+    }
+    }
                         }
                         this.storage.put(id, lst);
                     } catch (Exception ignore) {}
@@ -88,9 +118,18 @@ public void saveAll() {
         try {
             org.bukkit.configuration.file.YamlConfiguration yml = new org.bukkit.configuration.file.YamlConfiguration();
             for (java.util.Map.Entry<java.util.UUID, java.util.List<org.bukkit.inventory.ItemStack>> e : storage.entrySet()) {
-                yml.set(e.getKey().toString(), e.getValue());
+                java.util.List<String> out = new java.util.ArrayList<>();
+                for (org.bukkit.inventory.ItemStack it : e.getValue()) {
+                    out.add(com.minkang.ultimate.usershop.util.ItemSerializer.serializeToBase64(it));
+                }
+                yml.set(e.getKey().toString(), out);
             }
             yml.save(storageFile);
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Failed to save storage.yml: " + ex.getMessage());
+        }
+    }
+    yml.save(storageFile);
         } catch (Exception ex) {
             plugin.getLogger().warning("Failed to save storage.yml: " + ex.getMessage());
         }
