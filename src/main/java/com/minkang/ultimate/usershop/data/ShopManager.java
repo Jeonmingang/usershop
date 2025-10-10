@@ -226,6 +226,12 @@ if (prev != null) {
     }
 
     public void handlePurchase(Player buyer, UUID sellerId, int slot, int amount) {
+        // Prevent self-purchase: buyer cannot buy their own listings
+        if (buyer != null && buyer.getUniqueId().equals(sellerId)) {
+            buyer.sendMessage(Main.getInstance().msg("cannot-buy-own"));
+            return;
+        }
+
         PlayerShop shop = getOrCreateShop(sellerId);
         Listing listing = shop.getListings().get(slot);
         if (listing == null) return;

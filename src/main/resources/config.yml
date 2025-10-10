@@ -62,6 +62,8 @@ format:
     - "&7쉬프트+좌클릭: 64개 구매"
 
 messages:
+  cannot-buy-own: "&c자기 상점의 물품은 구매할 수 없습니다."
+
   register-fee-charged: "&7등록 수수료 &e{fee}&7원이 차감되었습니다."
   prefix: "&8[&e유저상점&8]&r "
   help:
@@ -131,20 +133,3 @@ expansion-ticket:
     - "&7사용 시 개인 상점 슬롯 +9"
   slots-per-ticket: 9
 
-messages:
-  prefix: "&6[유저상점]&r "
-  reloaded: "&a설정을 리로드했습니다."
-  not-ticket: "&c손에 &a유저상점 확장권&c을 들어주세요."
-  not-enough-ticket: "&c확장권이 {need}개 필요합니다. (현재 {have}개)"
-  expansion-over-max: "&c최대 {max} 슬롯을 초과할 수 없습니다."
-  expansion-success: "&a개인 상점 슬롯이 {added} 증가하여 현재 {new} 슬롯이 되었습니다."
-  give-ticket: "&a유저상점 확장권 {count}개를 지급했습니다."
-  help:
-    - "&e/유저상점 &7- GUI 열기"
-    - "&e/유저상점 확장 &7[수량] - 손에 든 확장권을 사용하여 슬롯 확장"
-    - "&e/유저상점 리로드 &7(OP) - 설정 리로드"
-    - "&e/유저상점 확장권 <수량> &7(OP) - 확장권 지급"
-
-messages:
-  storage-empty: "&7보관함에 받을 아이템이 없습니다."
-  storage-collected: "&a보관함에서 {count}개 아이템을 받았습니다."
