@@ -16,6 +16,41 @@ import org.bukkit.inventory.ItemStack;
 
 public class UserShopCommand implements CommandExecutor {
 
+    private org.bukkit.inventory.ItemStack buildTicket(int amount) {
+        org.bukkit.configuration.file.FileConfiguration cfg = plugin.getConfig();
+        String mat = cfg.getString("expansion-ticket.material", "PAPER");
+        String name = cfg.getString("expansion-ticket.name", "&a유저상점 확장권");
+        java.util.List<String> lore = cfg.getStringList("expansion-ticket.lore");
+        org.bukkit.inventory.ItemStack it = new org.bukkit.inventory.ItemStack(org.bukkit.Material.matchMaterial(mat) == null ? org.bukkit.Material.PAPER : org.bukkit.Material.matchMaterial(mat), Math.max(1, amount));
+        org.bukkit.inventory.meta.ItemMeta im = it.getItemMeta();
+        if (im != null) {
+            im.setDisplayName(com.minkang.ultimate.usershop.Main.color(name));
+            java.util.List<String> out = new java.util.ArrayList<>();
+            for (String l : lore) out.add(com.minkang.ultimate.usershop.Main.color(l));
+            im.setLore(out);
+            it.setItemMeta(im);
+        }
+        return it;
+    }
+    private boolean isTicket(org.bukkit.inventory.ItemStack it) {
+        if (it == null || it.getType() == org.bukkit.Material.AIR) return false;
+        org.bukkit.configuration.file.FileConfiguration cfg = plugin.getConfig();
+        String name = com.minkang.ultimate.usershop.Main.color(cfg.getString("expansion-ticket.name", "&a유저상점 확장권"));
+        java.util.List<String> lore = cfg.getStringList("expansion-ticket.lore");
+        org.bukkit.inventory.meta.ItemMeta im = it.getItemMeta();
+        if (im == null || !im.hasDisplayName()) return false;
+        if (!name.equals(im.getDisplayName())) return false;
+        if (!lore.isEmpty()) {
+            java.util.List<String> got = im.getLore();
+            if (got == null) return false;
+            java.util.List<String> colored = new java.util.ArrayList<>();
+            for (String l : lore) colored.add(com.minkang.ultimate.usershop.Main.color(l));
+            if (!got.containsAll(colored)) return false;
+        }
+        return true;
+    }
+
+
     private final Main plugin;
 
     public UserShopCommand(Main plugin) {
@@ -244,6 +279,68 @@ public class UserShopCommand implements CommandExecutor {
                 p.sendMessage(plugin.msg("admin-removed").replace("{slot}", String.valueOf(slot)));
                 return true;
             }
+            return true;
+        }
+
+
+        // admin reload
+        if (args.length >= 1 && (args[0].equalsIgnoreCase("리로드") || args[0].equalsIgnoreCase("reload"))) {
+            if (!p.hasPermission("usershop.admin")) {
+                p.sendMessage(Main.color("&c권한이 없습니다.")); return true;
+            }
+            plugin.reloadConfig();
+            p.sendMessage(plugin.msg("reloaded"));
+            return true;
+        }
+
+        // admin give ticket: /유저상점 확장권 <수량>
+        if (args.length >= 1 && (args[0].equalsIgnoreCase("확장권"))) {
+            if (!p.hasPermission("usershop.admin")) {
+                p.sendMessage(Main.color("&c권한이 없습니다.")); return true;
+            }
+            int count = 1;
+            if (args.length >= 2) {
+                try { count = Integer.parseInt(args[1]); } catch (Exception ignored) {}
+            }
+            org.bukkit.inventory.ItemStack ticket = buildTicket(count);
+            org.bukkit.inventory.PlayerInventory inv = p.getInventory();
+            java.util.HashMap<Integer, org.bukkit.inventory.ItemStack> left = inv.addItem(ticket);
+            if (!left.isEmpty()) {
+                // drop leftovers
+                for (org.bukkit.inventory.ItemStack rest : left.values()) {
+                    p.getWorld().dropItemNaturally(p.getLocation(), rest);
+                }
+            }
+            p.sendMessage(plugin.msg("give-ticket").replace("{count}", String.valueOf(count)));
+            return true;
+        }
+
+        // user consume ticket: /유저상점 확장 [수량]
+        if (args.length >= 1 && (args[0].equalsIgnoreCase("확장"))) {
+            int want = -1;
+            if (args.length >= 2) {
+                try { want = Integer.parseInt(args[1]); } catch (Exception ignored) {}
+            }
+            org.bukkit.inventory.ItemStack hand = p.getInventory().getItemInMainHand();
+            if (!isTicket(hand)) {
+                p.sendMessage(plugin.msg("not-ticket")); return true;
+            }
+            int have = hand.getAmount();
+            int use = (want <= 0 ? have : Math.min(want, have));
+            int per = plugin.getConfig().getInt("expansion-ticket.slots-per-ticket", 9);
+            int current = plugin.getShopManager().getCapacity(p.getUniqueId());
+            int max = plugin.getConfig().getInt("settings.max-slots", 54);
+            long added = (long) use * per;
+            int newSlots = current + (int) added;
+            if (newSlots > max) {
+                p.sendMessage(plugin.msg("expansion-over-max").replace("{max}", String.valueOf(max))); return true;
+            }
+            // consume
+            hand.setAmount(have - use);
+            plugin.getShopManager().setCapacity(p.getUniqueId(), newSlots);
+            p.sendMessage(plugin.msg("expansion-success")
+                .replace("{added}", String.valueOf(added))
+                .replace("{new}", String.valueOf(newSlots)));
             return true;
         }
 

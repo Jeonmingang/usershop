@@ -122,3 +122,25 @@ discord:
   enabled: true
   on-register: true
   on-purchase: true
+
+# === Expansion ticket settings ===
+expansion-ticket:
+  material: PAPER
+  name: "&a유저상점 확장권"
+  lore:
+    - "&7사용 시 개인 상점 슬롯 +9"
+  slots-per-ticket: 9
+
+messages:
+  prefix: "&6[유저상점]&r "
+  reloaded: "&a설정을 리로드했습니다."
+  not-ticket: "&c손에 &a유저상점 확장권&c을 들어주세요."
+  not-enough-ticket: "&c확장권이 {need}개 필요합니다. (현재 {have}개)"
+  expansion-over-max: "&c최대 {max} 슬롯을 초과할 수 없습니다."
+  expansion-success: "&a개인 상점 슬롯이 {added} 증가하여 현재 {new} 슬롯이 되었습니다."
+  give-ticket: "&a유저상점 확장권 {count}개를 지급했습니다."
+  help:
+    - "&e/유저상점 &7- GUI 열기"
+    - "&e/유저상점 확장 &7[수량] - 손에 든 확장권을 사용하여 슬롯 확장"
+    - "&e/유저상점 리로드 &7(OP) - 설정 리로드"
+    - "&e/유저상점 확장권 <수량> &7(OP) - 확장권 지급"

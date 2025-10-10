@@ -159,7 +159,12 @@ if (prev != null) {
         if (plugin.getConfig().getBoolean("discord.on-register", true)) {
             String itemName = com.minkang.ultimate.usershop.util.ItemUtils.getPrettyName(clone);
             String seller = player.getName();
-            String msg = "📦 등록: **" + seller + "** — " + itemName + " x" + amount + " | 가격: " + price;
+            String template = plugin.getConfig().getString("discord.messages.register", "📦 등록: **{seller}** — {item} x{amount} | 가격: {price}");
+            String msg = template
+                    .replace("{seller}", seller)
+                    .replace("{item}", itemName)
+                    .replace("{amount}", String.valueOf(amount))
+                    .replace("{price}", String.valueOf(price));
             notifyDiscord(msg);
         }
     }
@@ -245,7 +250,20 @@ addToStorage(buyer.getUniqueId(), give);
         save(shop);
 
         String itemName = ItemUtils.getPrettyName(give);
-        buyer.sendMessage(Main.getInstance().msg("purchase-success")
+        
+        if (plugin.getConfig().getBoolean("discord.on-purchase", true)) {
+            String tmpl = plugin.getConfig().getString("discord.messages.purchase", "🛒 구매: **{buyer}** — {item} x{amount} | 지불: {paid} | 판매자: {seller}");
+            String sellerName = seller.getName() == null ? seller.getUniqueId().toString() : seller.getName();
+            String buyerName = buyer.getName();
+            String msg2 = tmpl
+                    .replace("{buyer}", buyerName)
+                    .replace("{seller}", sellerName)
+                    .replace("{item}", itemName)
+                    .replace("{amount}", String.valueOf(buyAmount))
+                    .replace("{paid}", String.valueOf(total));
+            notifyDiscord(msg2);
+        }
+buyer.sendMessage(Main.getInstance().msg("purchase-success")
                 .replace("{item}", itemName)
                 .replace("{amount}", String.valueOf(buyAmount))
                 .replace("{paid}", String.valueOf(total)));
