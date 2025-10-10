@@ -83,6 +83,7 @@ public class MainShopsGUI implements InventoryHolder {
             ItemMeta meta = it.getItemMeta();
             OfflinePlayer op = Bukkit.getOfflinePlayer(r.owner);
             List<String> lore = new ArrayList<>();
+            if (meta != null && meta.hasLore()) lore.addAll(meta.getLore());
             lore.add(Main.color(plugin.getConfig().getString("format.price", "&6가격: &e{price}")
                     .replace("{price}", String.valueOf(r.listing.getPrice()))));
             lore.add(Main.color(plugin.getConfig().getString("format.seller", "&7판매자: &f{seller}")
