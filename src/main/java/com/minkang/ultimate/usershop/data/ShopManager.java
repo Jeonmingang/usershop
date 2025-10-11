@@ -205,12 +205,25 @@ if (prev != null) {
             save(shop);
             if (player.isOnline()) {
                 Player online = (Player) player;
-                if (refundItem) {
-                    if (!ItemUtils.giveItem(online, listing.getItem())) {
-                        addToStorage(online.getUniqueId(), listing.getItem());
-                        online.sendMessage(Main.getInstance().msg("storage-inventory-full"));
-                    }
-                }
+                
+if (refundItem) {
+    int remaining = listing.getStock();
+    if (remaining > 0) {
+        int maxStack = listing.getItem().getMaxStackSize();
+        int givenTotal = 0;
+        while (remaining > 0) {
+            int take = Math.min(maxStack, remaining);
+            org.bukkit.inventory.ItemStack stack = listing.getItem().clone();
+            stack.setAmount(take);
+            if (!com.minkang.ultimate.usershop.util.ItemUtils.giveItem(online, stack)) {
+                addToStorage(online.getUniqueId(), stack);
+                online.sendMessage(Main.getInstance().msg("storage-inventory-full"));
+            }
+            remaining -= take;
+            givenTotal += take;
+        }
+    }
+}
                 if (refundTicket) {
                     String b64 = plugin.getConfig().getString("items.register-ticket", "");
                     ItemStack ticket = com.minkang.ultimate.usershop.util.ItemSerializer.deserializeFromBase64(b64);
