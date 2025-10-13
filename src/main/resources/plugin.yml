@@ -1,6 +1,14 @@
-name: NBTGuard
-main: com.minkang.nbtguard.NBTGuardPlugin
-version: 1.0.1
+name: UserShop
+main: com.minkang.ultimate.usershop.Main
+version: 1.0.0
 api-version: 1.16
-author: minkang
 depend: [ProtocolLib]
+softdepend: [Vault]
+commands:
+  유저상점:
+    aliases: [usershop, shop]
+    description: Open the user shop GUI
+    permission: usershop.use
+permissions:
+  usershop.use:
+    default: true
