@@ -1,13 +1,6 @@
 name: NBTGuard
 main: com.minkang.nbtguard.NBTGuardPlugin
-version: 1.0.0
+version: 1.0.1
 api-version: 1.16
+author: minkang
 depend: [ProtocolLib]
-commands:
-  nbtguard:
-    description: NBTGuard commands
-    usage: /nbtguard
-    permission: nbtguard.admin
-permissions:
-  nbtguard.admin:
-    default: op

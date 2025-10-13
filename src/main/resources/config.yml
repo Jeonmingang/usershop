@@ -1,7 +1,10 @@
 # NBTGuard configuration
-maxStringBytes: 60000   # Fail-safe: any single String NBT > this is removed
-maxLoreLines: 24        # keep at most this many lore lines
-maxLoreLineLength: 220  # trim each lore line to this many characters
-trimDisplayName: true
-maxDisplayNameLength: 120
-debugLog: false
+debug: true
+
+limits:
+  maxStringBytes: 60000
+  maxLoreLines: 24
+  maxLoreCharsPerLine: 220
+  maxDisplayNameChars: 120
+
+replaceIfStillTooBig: true
