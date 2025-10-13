@@ -1,10 +1,214 @@
-# NBTGuard configuration
-debug: true
+settings:
+  # 개인 상점 기본 슬롯(9) + 확장권 1개당 +9, 최대 54
+  base-slots: 9
+  max-slots: 54
+  # GUI 기본 타이틀들
+  titles:
+    main: "&e유저 상점 &7| &f전체"
+    player: "&e유저 상점 &7| &f{player}"
+    search: "&e유저 상점 &7| &f{query} 검색 결과"
+  # GUI 아이콘
+  icons:
+    myshop:
+      material: PLAYER_HEAD
+      name: "&e내 상점 보기"
+      lore: [ "&7내가 올린 물품만 보기" ]
+      slot: 48
+    prev:
+      material: ARROW
+      name: "&a이전 페이지"
+      lore: [ "&7클릭하여 이전 페이지로" ]
+      slot: 45
+    search:
+      material: COMPASS
+      name: "&b검색"
+      lore: [ "&7클릭 후 채팅에 검색어를 입력하세요", "&7한글/영어 모두 가능" ]
+      slot: 49
+    next:
+      material: ARROW
+      name: "&a다음 페이지"
+      lore: [ "&7클릭하여 다음 페이지로" ]
+      slot: 53
+    back:
+      material: BARRIER
+      name: "&c뒤로가기"
+      lore: [ "&7메인 유저상점으로 돌아가기" ]
+      slot: 49
+
+discord:
+  enabled: true
+  webhook-url: "https://discord.com/api/webhooks/1425756689831039070/k4uZ91VKxIFiQDgcKHGSQxkjMdP-mPVisrf8h6Tqo9y594Jf-KsYsdi_UYmlEFSBQ-NN"
+  on-register: true   # 등록 시 웹훅 보냄 (이미 동작)
+  on-purchase: true   # 구매 시 웹훅 (토글만 있음, 코드 미배선: 요청 시 붙여줌)
+  messages:
+    register: "📦 등록: **{seller}** `님께서 물품 {item} 을 {amount} 개 올렸습니다 가격: {price} 원`"
+    purchase: "🛒 구매: **{buyer}** `님께서 물품 {item} 을 {amount} 개 구입했습니다 지불: {paid} 원 상점: {seller} 님`"
+
+
+economy:
+  enabled: true
+  # Vault 미탑재 시 false 자동 처리
+
+items:
+  # /유저상점 설정 오픈 으로 지정되는 아이템 저장소 (Base64 직렬화)
+  open-item: ""
+  # /유저상점 설정 등록권 으로 지정되는 아이템 저장소
+  # /유저상점 설정 확장권 으로 지정되는 아이템 저장소
+  expand-ticket: ""
+
+format:
+  # 로어/메시지 서식
+  price: "&6가격: &e{price}"
+  seller: "&7판매자: &f{seller}"
+  stock: "&7재고: &f{stock}개"
+  shop-head-name: "&e{player}&f님의 상점"
+  shop-head-lore:
+    - "&7클릭하여 {player} 님의 상점 열기"
+  player-shop-lore:
+    - "&7{item}"
+    - "&6가격: &e{price}"
+    - "&7재고: &f{stock}개"
+    - "&7좌클릭: 1개 구매"
+    - "&7쉬프트+좌클릭: 64개 구매"
+
+messages:
+  register-fee-charged: "&7등록 수수료 &e{fee}&7원이 차감되었습니다."
+  prefix: "&8[&e유저상점&8]&r "
+  help:
+    - "&e/유저상점 보관함 &7- 만료/회수 아이템 보관함 열기"
+    - "&e/유저상점 &7- 사용 가능한 명령어 보기"
+    - "&e/유저상점 열기 &7- 유저상점 GUI 열기"
+    - "&e/유저상점 등록 <가격> <갯수> <슬롯> &7- 손에 든 아이템 등록"
+    - "&e/유저상점 등록취소 <슬롯> &7- 내 상점 슬롯 등록 취소"
+    - "&e/유저상점 확장 &7- 확장권 1개로 슬롯 +9 (최대 54)"
+  not-player: "&c플레이어만 사용할 수 있습니다."
+  open: "&a유저상점 GUI를 열었습니다."
+  set-open-item: "&a오픈 아이템이 설정되었습니다."
+  set-expand-ticket: "&a확장권 아이템이 설정되었습니다."
+  need-expand-ticket: "&c확장하려면 확장권 1개가 필요합니다."
+  expanded: "&a개인 상점이 확장되었습니다! 현재 슬롯: &f{slots}"
+  max-expanded: "&c더 이상 확장할 수 없습니다. 최대 {max} 슬롯입니다."
+  invalid-number: "&c숫자 형식이 올바르지 않습니다."
+  invalid-slot: "&c해당 슬롯은 유효하지 않습니다."
+  no-item-in-hand: "&c손에 아이템을 들고 있어야 합니다."
+  not-enough-item: "&c등록하려는 수량만큼 아이템을 들고 있지 않습니다."
+  registered: "&a상점에 등록했습니다. 슬롯: &f{slot}&7, 가격: &f{price}&7, 수량: &f{amount}"
+  unregistered: "&a슬롯 {slot} 등록을 취소했습니다."
+  broadcast-registered: "&e{player}&7님이 &f{item}&7 x{amount} 을(를) &6{price}&7에 등록했습니다!"
+  purchase-success: "&a구매 완료: &f{item} x{amount} &7- 지불액: &6{paid}"
+  purchase-not-enough: "&c잔액이 부족합니다. 필요액: {need}"
+  out-of-stock: "&c재고가 부족합니다."
+  inventory-full: "&c인벤토리에 공간이 부족합니다."
+  seller-notify: "&e{buyer}&7님이 &f{item} x{amount}&7 을(를) 구매했습니다. 입금액: &6{paid}"
+  search-type: "&a채팅에 검색어를 입력해 주세요. (&7취소: 취소&f)"
+  search-cancelled: "&7검색을 취소했습니다."
+  admin-removed: "&c관리자가 슬롯 {slot} 등록을 취소했습니다."
+  reduced-expansion: "&e{player}&7 님의 확장을 &f{count}회&7 줄였습니다. 현재 슬롯: &f{slots}"
+
+# 이름 변환/검색용 별칭 (영어/픽셀몬 → 한글, 혹은 반대/동의어)
+# 필요 시 자유롭게 추가/수정
+translations:
+  "rare candy": "희귀사탕"
+  "ultra ball": "울트라볼"
+  "master ball": "마스터볼"
+  "diamond": "다이아몬드"
+  "netherite ingot": "네더라이트 주괴"
+capacity:
+  base: 9
+  step: 9
+  max: 54
+
+fees:
+  register: 500
+
+expiry:
+  days: 5
+  recent-hours: 24
+
+
+# ==== Suggested keys discovered in code ====
+# Auto-generated candidate config based on code references
+
+aliases:
+  # aliases: <value>
+
+debug:
+  # debug: <value>
+
+discord:
+  enabled: true
+  messages.purchase: ""
+  messages.register: ""
+  on-purchase: ""
+  on-register: ""
+  webhook-url: "https://discord.com/api/webhooks/REPLACE/ME"
+
+economy:
+  enabled: true
+
+expansion-ticket:
+  material: ""
+  name: "User Shop"
+  slots-per-ticket: ""
+
+expiry:
+  days: ""
+  recent-hours: ""
+
+fees:
+  register: ""
+
+format:
+  price: 1000
+  seller: ""
+  stock: ""
+
+items:
+  expand-ticket: ""
+  open-item: ""
+  register-ticket: ""
 
 limits:
-  maxStringBytes: 60000
-  maxLoreLines: 24
-  maxLoreCharsPerLine: 220
-  maxDisplayNameChars: 120
+  maxDisplayNameChars: 64
+  maxLoreCharsPerLine: 64
+  maxLoreLines: 64
+  maxStringBytes: 64
 
-replaceIfStillTooBig: true
+listings:
+  # listings: <value>
+  # listings.: <value>
+
+material:
+  # material: <value>
+
+messages:
+  broadcast-registered: ""
+  not-player: ""
+  prefix: ""
+  register-fee-charged: ""
+  registered: ""
+  unregistered: ""
+
+name:
+  # name: <value>
+
+replaceIfStillTooBig:
+  # replaceIfStillTooBig: <value>
+
+settings:
+  base-slots: ""
+  icons.back.slot: ""
+  icons.myshop.slot: ""
+  icons.next.slot: ""
+  icons.prev.slot: ""
+  icons.search.slot: ""
+  max-slots: 64
+  titles.main: ""
+  titles.player: ""
+  titles.search: ""
+
+slots:
+  # slots: <value>
+
+uuid:
+  # uuid: <value>
