@@ -36,7 +36,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- ProtocolLib 4.8.0 for 1.16.5 (JitPack coordinates) -->
     <dependency>
       <groupId>com.github.dmulloy2</groupId>
       <artifactId>ProtocolLib</artifactId>
@@ -44,7 +43,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Vault API (compile-time only) -->
     <dependency>
       <groupId>com.github.MilkBowl</groupId>
       <artifactId>VaultAPI</artifactId>
@@ -55,7 +53,6 @@
 
   <build>
     <plugins>
-      <!-- Use --release 8 to target Java 8 APIs while building on JDK 11+ -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
