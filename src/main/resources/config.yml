@@ -145,15 +145,6 @@ discord:
 
 economy:
   enabled: true
-  
-debug: false
-limits:
-  maxStringBytes: 60000      # 65535보다 여유 있게
-  maxLoreLines: 24
-  maxLoreCharsPerLine: 220
-  maxDisplayNameChars: 120
-replaceIfStillTooBig: true   # 여전히 크면 BARRIER로 치환
-
 
 expansion-ticket:
   material: ""
@@ -178,10 +169,10 @@ items:
   register-ticket: ""
 
 limits:
-  maxDisplayNameChars: 64
-  maxLoreCharsPerLine: 64
-  maxLoreLines: 64
-  maxStringBytes: 64
+  maxStringBytes: 60000
+  maxLoreLines: 24
+  maxLoreCharsPerLine: 220
+  maxDisplayNameChars: 120
 
 listings:
   # listings: <value>
