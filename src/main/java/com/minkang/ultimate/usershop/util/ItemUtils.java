@@ -142,4 +142,27 @@ public class ItemUtils {
         t = t.replace(" ", "");
         return t;
     }
+
+    public static boolean isLoreExcessive(org.bukkit.inventory.ItemStack item, int maxLineChars, int maxLines, int maxTotalChars) {
+        if (item == null) return false;
+        try {
+            if (!item.hasItemMeta()) return false;
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta == null) return false;
+            java.util.List<String> lore = meta.getLore();
+            if (lore == null) return false;
+            int total = 0;
+            if (lore.size() > maxLines) return true;
+            for (String line : lore) {
+                if (line == null) continue;
+                if (line.length() > maxLineChars) return true;
+                total += line.length();
+                if (total > maxTotalChars) return true;
+            }
+            return false;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
 }

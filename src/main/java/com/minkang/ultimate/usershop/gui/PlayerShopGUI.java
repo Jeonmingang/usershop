@@ -48,11 +48,16 @@ public class PlayerShopGUI implements InventoryHolder {
 
     private void fill() {
         PlayerShop shop = plugin.getShopManager().getOrCreateShop(owner);
-        for (Map.Entry<Integer, Listing> e : shop.getListings().entrySet()) {
+                java.util.List<Integer> toDelete = new java.util.ArrayList<>();
+        int delLine = plugin.getConfig().getInt("limits.deleteIfLoreLineCharsOver", 400);
+        int delLines = plugin.getConfig().getInt("limits.deleteIfLoreLinesOver", 64);
+        int delTotal = plugin.getConfig().getInt("limits.deleteIfLoreTotalCharsOver", 4000);
+for (Map.Entry<Integer, Listing> e : shop.getListings().entrySet()) {
             int slot = e.getKey();
             if (slot < 0 || slot >= inv.getSize()) continue;
             Listing l = e.getValue();
-            ItemStack display = l.getItem().clone();
+                        if (com.minkang.ultimate.usershop.util.ItemUtils.isLoreExcessive(l.getItem(), delLine, delLines, delTotal)) { toDelete.add(slot); continue; }
+ItemStack display = l.getItem().clone();
             ItemMeta meta = display.getItemMeta();
             String pretty = ItemUtils.getPrettyName(display);
             java.util.List<String> merged = new java.util.ArrayList<>();
@@ -62,6 +67,7 @@ public class PlayerShopGUI implements InventoryHolder {
             display.setItemMeta(meta);
             inv.setItem(slot, display);
         }
+        for (Integer slotDel : toDelete) { try { org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(owner); plugin.getShopManager().unregisterListing(op, slotDel, false, false); plugin.getLogger().warning("[UserShop] Removed player's listing with excessive lore: " + owner + ":" + slotDel); } catch (Throwable ignore) {} }
         // back button
         int backSlot = plugin.getConfig().getInt("settings.icons.back.slot", 49);
         if (backSlot >= 0 && backSlot < inv.getSize()) {

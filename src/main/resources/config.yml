@@ -35,16 +35,6 @@ settings:
       lore: [ "&7메인 유저상점으로 돌아가기" ]
       slot: 49
 
-discord:
-  enabled: true
-  webhook-url: "https://discord.com/api/webhooks/1425756689831039070/k4uZ91VKxIFiQDgcKHGSQxkjMdP-mPVisrf8h6Tqo9y594Jf-KsYsdi_UYmlEFSBQ-NN"
-  on-register: true   # 등록 시 웹훅 보냄 (이미 동작)
-  on-purchase: true   # 구매 시 웹훅 (토글만 있음, 코드 미배선: 요청 시 붙여줌)
-  messages:
-    register: "📦 등록: **{seller}** `님께서 물품 {item} 을 {amount} 개 올렸습니다 가격: {price} 원`"
-    purchase: "🛒 구매: **{buyer}** `님께서 물품 {item} 을 {amount} 개 구입했습니다 지불: {paid} 원 상점: {seller} 님`"
-
-
 economy:
   enabled: true
   # Vault 미탑재 시 false 자동 처리
@@ -72,6 +62,8 @@ format:
     - "&7쉬프트+좌클릭: 64개 구매"
 
 messages:
+  cannot-buy-own: "&c자기 상점의 물품은 구매할 수 없습니다."
+
   register-fee-charged: "&7등록 수수료 &e{fee}&7원이 차감되었습니다."
   prefix: "&8[&e유저상점&8]&r "
   help:
@@ -99,6 +91,7 @@ messages:
   purchase-not-enough: "&c잔액이 부족합니다. 필요액: {need}"
   out-of-stock: "&c재고가 부족합니다."
   inventory-full: "&c인벤토리에 공간이 부족합니다."
+  storage-inventory-full: "&c인벤토리가 가득 차서 아이템을 보관함에 보관/유지했습니다. 빈 칸을 만들고 다시 시도하세요."
   seller-notify: "&e{buyer}&7님이 &f{item} x{amount}&7 을(를) 구매했습니다. 입금액: &6{paid}"
   search-type: "&a채팅에 검색어를 입력해 주세요. (&7취소: 취소&f)"
   search-cancelled: "&7검색을 취소했습니다."
@@ -126,89 +119,23 @@ expiry:
   recent-hours: 24
 
 
-# ==== Suggested keys discovered in code ====
-# Auto-generated candidate config based on code references
-
-aliases:
-  # aliases: <value>
-
-debug:
-  # debug: <value>
-
 discord:
+  webhook-url: ""
   enabled: true
-  messages.purchase: ""
-  messages.register: ""
-  on-purchase: ""
-  on-register: ""
-  webhook-url: "https://discord.com/api/webhooks/REPLACE/ME"
+  on-register: true
+  on-purchase: true
 
-economy:
-  enabled: true
-
+# === Expansion ticket settings ===
 expansion-ticket:
-  material: ""
-  name: "User Shop"
-  slots-per-ticket: ""
+  material: PAPER
+  name: "&a유저상점 확장권"
+  lore:
+    - "&7사용 시 개인 상점 슬롯 +9"
+  slots-per-ticket: 9
 
-expiry:
-  days: ""
-  recent-hours: ""
 
-fees:
-  register: ""
-
-format:
-  price: 1000
-  seller: ""
-  stock: ""
-
-items:
-  expand-ticket: ""
-  open-item: ""
-  register-ticket: ""
 
 limits:
-  maxStringBytes: 60000
-  maxLoreLines: 24
-  maxLoreCharsPerLine: 220
-  maxDisplayNameChars: 120
-
-listings:
-  # listings: <value>
-  # listings.: <value>
-
-material:
-  # material: <value>
-
-messages:
-  broadcast-registered: ""
-  not-player: ""
-  prefix: ""
-  register-fee-charged: ""
-  registered: ""
-  unregistered: ""
-
-name:
-  # name: <value>
-
-replaceIfStillTooBig:
-  # replaceIfStillTooBig: <value>
-
-settings:
-  base-slots: ""
-  icons.back.slot: ""
-  icons.myshop.slot: ""
-  icons.next.slot: ""
-  icons.prev.slot: ""
-  icons.search.slot: ""
-  max-slots: 64
-  titles.main: ""
-  titles.player: ""
-  titles.search: ""
-
-slots:
-  # slots: <value>
-
-uuid:
-  # uuid: <value>
+  deleteIfLoreLineCharsOver: 400
+  deleteIfLoreLinesOver: 64
+  deleteIfLoreTotalCharsOver: 4000

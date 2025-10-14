@@ -1,16 +1,5 @@
 package com.minkang.ultimate.usershop;
 
-
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.events.ListenerPriority;
-import org.bukkit.inventory.ItemStack;
-import java.util.List;
-import java.util.logging.Level;
-import com.minkang.nbtguard.NbtSanitizer;
 import com.minkang.ultimate.usershop.commands.UserShopCommand;
 import com.minkang.ultimate.usershop.data.ShopManager;
 import com.minkang.ultimate.usershop.listeners.ChatListener;
@@ -22,10 +11,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin {
-    
-    private NbtSanitizer nbtSanitizer;
-private PacketAdapter nbtGuardAdapter;
-
 
     private static Main instance;
     private ShopManager shopManager;
@@ -33,47 +18,6 @@ private PacketAdapter nbtGuardAdapter;
 
     @Override
     public void onEnable() {
-        
-        // Initialize NBTGuard with config limits
-        int maxStringBytes = getConfig().getInt("limits.maxStringBytes", 60000);
-        int maxLoreLines = getConfig().getInt("limits.maxLoreLines", 24);
-        int maxLoreCharsPerLine = getConfig().getInt("limits.maxLoreCharsPerLine", 220);
-        int maxDisplayNameChars = getConfig().getInt("limits.maxDisplayNameChars", 120);
-
-        nbtSanitizer = new NbtSanitizer(this, maxStringBytes, maxLoreLines, maxLoreCharsPerLine, maxDisplayNameChars);
-
-        
-        try {
-            ProtocolManager pm = ProtocolLibrary.getProtocolManager();
-            nbtGuardAdapter = new PacketAdapter(this, ListenerPriority.NORMAL,
-                    PacketType.Play.Server.WINDOW_ITEMS, PacketType.Play.Server.SET_SLOT) {
-                @Override
-                public void onPacketSending(PacketEvent e) {
-                    try {
-                        if (e.getPacket().getItemListModifier().size() > 0) {
-                            java.util.List<org.bukkit.inventory.ItemStack> items =
-                                    e.getPacket().getItemListModifier().read(0);
-                            for (int i = 0; i < items.size(); i++) {
-                                items.set(i, nbtSanitizer.sanitize(items.get(i)));
-                            }
-                            e.getPacket().getItemListModifier().write(0, items);
-                        }
-                        if (e.getPacket().getItemModifier().size() > 0) {
-                            org.bukkit.inventory.ItemStack item =
-                                    e.getPacket().getItemModifier().read(0);
-                            e.getPacket().getItemModifier().write(0,
-                                    nbtSanitizer.sanitize(item));
-                        }
-                    } catch (Throwable t) {
-                        getLogger().log(Level.WARNING, "NBTGuard sanitize failed", t);
-                    }
-                }
-            };
-            pm.addPacketListener(nbtGuardAdapter);
-        } catch (Throwable t) {
-            getLogger().log(Level.WARNING, "Failed to register NBTGuard listener", t);
-        }
-
         instance = this;
         saveDefaultConfig();
         // legacy translations file
@@ -97,12 +41,6 @@ private PacketAdapter nbtGuardAdapter;
 
     @Override
     public void onDisable() {
-        
-        if (nbtGuardAdapter != null) {
-            try { ProtocolLibrary.getProtocolManager().removePacketListener(nbtGuardAdapter); }
-            catch (Throwable ignore) {}
-        }
-
         if (shopManager != null) {
             shopManager.saveAll();
         }
