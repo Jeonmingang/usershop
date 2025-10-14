@@ -26,7 +26,8 @@ public class PlayerShop {
         if (yml.isConfigurationSection("listings")) {
             for (String key : yml.getConfigurationSection("listings").getKeys(false)) {
                 int slot = Integer.parseInt(key);
-                ItemStack item = yml.getItemStack("listings." + key + ".item");
+                ItemStack item = null;
+                try { item = yml.getItemStack("listings." + key + ".item"); } catch (Throwable ex) { item = null; }
                 double price = yml.getDouble("listings." + key + ".price");
                 int stock = yml.getInt("listings." + key + ".stock");
                 long created = yml.getLong("listings." + key + ".created", System.currentTimeMillis());

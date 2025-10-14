@@ -95,7 +95,9 @@ int delTotal = plugin.getConfig().getInt("limits.deleteIfLoreTotalCharsOver", 40
         for (int i = start; i < end; i++) {
             Ref r = refs.get(i);
             int guiSlot = idx++;
-            ItemStack it = r.listing.getItem().clone();
+            ItemStack it;
+            try {
+                it = r.listing.getItem().clone();
             ItemMeta meta = it.getItemMeta();
             OfflinePlayer op = Bukkit.getOfflinePlayer(r.owner);
             List<String> lore = new ArrayList<>();
@@ -114,7 +116,14 @@ int delTotal = plugin.getConfig().getInt("limits.deleteIfLoreTotalCharsOver", 40
                 meta.setDisplayName(Main.color("&a[NEW] &r" + dn));
             }
             it.setItemMeta(meta);
-            inv.setItem(guiSlot, it);
+                inv.setItem(guiSlot, it);
+            } catch (Throwable ex) {
+                try {
+                    org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(r.owner);
+                    plugin.getShopManager().unregisterListing(op, r.slot, false, false);
+                    plugin.getLogger().warning("[UserShop] Removed listing due to GUI build error (" + ex.getClass().getSimpleName() + "): " + r.owner + ":" + r.slot);
+                } catch (Throwable ignore) {}
+            }
         }
 
         // controls
