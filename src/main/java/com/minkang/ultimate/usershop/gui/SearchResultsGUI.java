@@ -95,7 +95,6 @@ public class SearchResultsGUI implements InventoryHolder {
                     } else {
                         results.add(r);
                     }
-                    }
                 }
             }
         }
