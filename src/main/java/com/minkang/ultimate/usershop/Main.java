@@ -33,7 +33,7 @@ private PacketAdapter nbtGuardAdapter;
 
     @Override
     public void onEnable() {
-        nbtSanitizer = new NbtSanitizer();
+        nbtSanitizer = new NbtSanitizer(this, maxStringBytes, maxLoreLines, maxLoreCharsPerLine, maxDisplayNameChars);
 
         
         try {
