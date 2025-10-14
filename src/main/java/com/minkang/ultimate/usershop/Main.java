@@ -39,19 +39,19 @@ public class Main extends JavaPlugin {
                 @Override
                 public void onPacketSending(PacketEvent e) {
                     try {
-                        if (!e.getPacket().getItemListModifier().isEmpty()) {
+                        if (e.getPacket().getItemListModifier().size() > 0) {
                             java.util.List<org.bukkit.inventory.ItemStack> items =
                                     e.getPacket().getItemListModifier().read(0);
                             for (int i = 0; i < items.size(); i++) {
-                                items.set(i, NbtSanitizer.sanitize(items.get(i), getConfig()));
+                                items.set(i, NbtSanitizer.sanitize(items.get(i)));
                             }
                             e.getPacket().getItemListModifier().write(0, items);
                         }
-                        if (!e.getPacket().getItemModifier().isEmpty()) {
+                        if (e.getPacket().getItemModifier().size() > 0) {
                             org.bukkit.inventory.ItemStack item =
                                     e.getPacket().getItemModifier().read(0);
                             e.getPacket().getItemModifier().write(0,
-                                    NbtSanitizer.sanitize(item, getConfig()));
+                                    NbtSanitizer.sanitize(item));
                         }
                     } catch (Throwable t) {
                         getLogger().log(Level.WARNING, "NBTGuard sanitize failed", t);
