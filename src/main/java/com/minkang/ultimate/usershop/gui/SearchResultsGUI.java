@@ -72,29 +72,19 @@ public class SearchResultsGUI implements InventoryHolder {
                     Result r = new Result();
                     r.owner = ps.getOwner();
                     r.slot = e.getKey();
-                    r.listing = l;
-                    int delLine = plugin.getConfig().getInt("limits.deleteIfLoreLineCharsOver", 400);
-                    int delLines = plugin.getConfig().getInt("limits.deleteIfLoreLinesOver", 64);
-                    int delTotal = plugin.getConfig().getInt("limits.deleteIfLoreTotalCharsOver", 4000);
-                    if (com.minkang.ultimate.usershop.util.ItemUtils.isLoreExcessive(r.listing.getItem(), delLine, delLines, delTotal)) {
-                        try {
-                            org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(r.owner);
-                            plugin.getShopManager().unregisterListing(op, r.slot, false, false);
-                            plugin.getLogger().warning("[UserShop] Removed listing (search phase) with excessive lore: " + r.owner + ":" + r.slot);
-                        } catch (Throwable ignore) {}
-                    } else {
-                        int delLine = plugin.getConfig().getInt("limits.deleteIfLoreLineCharsOver", 400);
-                    int delLines = plugin.getConfig().getInt("limits.deleteIfLoreLinesOver", 64);
-                    int delTotal = plugin.getConfig().getInt("limits.deleteIfLoreTotalCharsOver", 4000);
-                    if (com.minkang.ultimate.usershop.util.ItemUtils.isLoreExcessive(r.listing.getItem(), delLine, delLines, delTotal)) {
-                        try {
-                            org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(r.owner);
-                            plugin.getShopManager().unregisterListing(op, r.slot, false, false);
-                            plugin.getLogger().warning("[UserShop] Removed listing with excessive lore (search): " + r.owner + ":" + r.slot);
-                        } catch (Throwable ignore) {}
-                    } else {
-                        results.add(r);
-                    }
+r.listing = l;
+int delLine = plugin.getConfig().getInt("limits.deleteIfLoreLineCharsOver", 400);
+int delLines = plugin.getConfig().getInt("limits.deleteIfLoreLinesOver", 64);
+int delTotal = plugin.getConfig().getInt("limits.deleteIfLoreTotalCharsOver", 4000);
+if (com.minkang.ultimate.usershop.util.ItemUtils.isLoreExcessive(r.listing.getItem(), delLine, delLines, delTotal)) {
+    try {
+        org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(r.owner);
+        plugin.getShopManager().unregisterListing(op, r.slot, false, false);
+        plugin.getLogger().warning("[UserShop] Removed listing with excessive lore (search): " + r.owner + ":" + r.slot);
+    } catch (Throwable ignore) {}
+} else {
+    results.add(r);
+}
                 }
             }
         }
