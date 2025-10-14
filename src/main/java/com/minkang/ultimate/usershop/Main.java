@@ -33,6 +33,13 @@ private PacketAdapter nbtGuardAdapter;
 
     @Override
     public void onEnable() {
+        
+        // Initialize NBTGuard with config limits
+        int maxStringBytes = getConfig().getInt("limits.maxStringBytes", 60000);
+        int maxLoreLines = getConfig().getInt("limits.maxLoreLines", 24);
+        int maxLoreCharsPerLine = getConfig().getInt("limits.maxLoreCharsPerLine", 220);
+        int maxDisplayNameChars = getConfig().getInt("limits.maxDisplayNameChars", 120);
+
         nbtSanitizer = new NbtSanitizer(this, maxStringBytes, maxLoreLines, maxLoreCharsPerLine, maxDisplayNameChars);
 
         
