@@ -86,7 +86,7 @@ int delTotal = plugin.getConfig().getInt("limits.deleteIfLoreTotalCharsOver", 40
                 plugin.getShopManager().unregisterListing(op, pair.getValue(), false, false);
                 plugin.getLogger().warning("[UserShop] Removed listing with excessive lore: " + pair.getKey() + ":" + pair.getValue());
             } catch (Throwable ignore) {}
-        } (most recent first)
+        }
         refs.sort((a,b)-> Long.compare(b.listing.getCreatedAt(), a.listing.getCreatedAt()));
 
         int start = page * 45;

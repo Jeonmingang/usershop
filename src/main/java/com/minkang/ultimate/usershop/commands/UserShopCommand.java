@@ -198,7 +198,7 @@ public class UserShopCommand implements CommandExecutor {
                 return true;
             }
             if (args.length < 2) {
-                p.sendMessage(Main.color("&c사용법: /유저상점 설정 <오픈|등록권|확장권|확장삭제|등록취소> ..."));
+                p.sendMessage(Main.color("&c사용법: /유저상점 설정 <오픈|등록권|확장권|확장삭제|등록취소> "));
                 return true;
             }
             String sub = args[1];
