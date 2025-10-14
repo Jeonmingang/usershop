@@ -22,7 +22,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin {
-    private PacketAdapter nbtGuardAdapter;
+    
+    private NbtSanitizer nbtSanitizer;
+private PacketAdapter nbtGuardAdapter;
 
 
     private static Main instance;
@@ -31,6 +33,8 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        nbtSanitizer = new NbtSanitizer();
+
         
         try {
             ProtocolManager pm = ProtocolLibrary.getProtocolManager();
@@ -43,7 +47,7 @@ public class Main extends JavaPlugin {
                             java.util.List<org.bukkit.inventory.ItemStack> items =
                                     e.getPacket().getItemListModifier().read(0);
                             for (int i = 0; i < items.size(); i++) {
-                                items.set(i, NbtSanitizer.sanitize(items.get(i)));
+                                items.set(i, nbtSanitizer.sanitize(items.get(i)));
                             }
                             e.getPacket().getItemListModifier().write(0, items);
                         }
@@ -51,7 +55,7 @@ public class Main extends JavaPlugin {
                             org.bukkit.inventory.ItemStack item =
                                     e.getPacket().getItemModifier().read(0);
                             e.getPacket().getItemModifier().write(0,
-                                    NbtSanitizer.sanitize(item));
+                                    nbtSanitizer.sanitize(item));
                         }
                     } catch (Throwable t) {
                         getLogger().log(Level.WARNING, "NBTGuard sanitize failed", t);
