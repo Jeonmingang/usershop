@@ -1,16 +1,12 @@
-name: UltimateUserShop
-main: com.minkang.ultimate.usershop.Main
-version: 2.2.5
+name: PixelDungeon
+main: com.github.pixeldungeon.PixelDungeonPlugin
+version: 0.4.32
 api-version: 1.16
-authors: [Mingang Jeon]
+author: PD-Team
+softdepend: [Vault, WorldGuard]
 commands:
-  유저상점:
-    description: 유저상점 명령어 모음
-    aliases: [usershop, user-shop]
-    usage: /유저상점
+  dungeon:
+    aliases: [던전, d, dd]
 permissions:
-  usershop.admin:
-    description: 유저상점 관리자 권한
-    default: op
-
-softdepend: [ItemEnchant]
+  pixeldungeon.user: {default: true}
+  pixeldungeon.admin: {default: op}

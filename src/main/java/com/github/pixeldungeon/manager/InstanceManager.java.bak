@@ -1,0 +1,371 @@
+package com.github.pixeldungeon.manager;
+
+import com.github.pixeldungeon.manager.StageTracker;
+
+import com.github.pixeldungeon.PixelDungeonPlugin;
+import com.github.pixeldungeon.model.*;
+import com.github.pixeldungeon.util.Text;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+
+import java.util.*;
+
+public class InstanceManager implements Listener {
+    private final PixelDungeonPlugin plugin;
+    private final Map<UUID, Instance> playerToInstance = new HashMap<>();
+    private final Map<String, Instance> running = new HashMap<>();
+
+    public InstanceManager(PixelDungeonPlugin plugin){ this.plugin = plugin; }
+
+    public void shutdownAll(){ for(Instance ins : new ArrayList<>(running.values())) ins.stop("서버 종료"); }
+
+    public boolean tryJoinAndStart(Player p, Dungeon d){
+        if(running.containsKey(d.name.toLowerCase())){
+            p.sendMessage(Text.color(plugin.getConfig().getString("messages.dungeon.already_running","&c이미 진행 중인 인스턴스가 있습니다."))); return false;
+        }
+        List<Player> members=new ArrayList<>();
+        if(d.mode==Mode.SOLO){
+            members.add(p);
+        } else {
+            if(plugin.partyManager().getParty(p.getUniqueId())==null){
+                p.sendMessage(Text.color(plugin.getConfig().getString("messages.party.need_party_to_join","&c파티 던전입니다. 먼저 파티를 맺어주세요. &7/던전 파티 <플레이어>")));
+                return false;
+            }
+            for(UUID u: plugin.partyManager().members(p.getUniqueId())){
+                Player m=Bukkit.getPlayer(u); if(m!=null && m.isOnline()) members.add(m);
+            }
+            if(members.size()<Math.max(1,d.minPlayers)){
+                p.sendMessage(Text.color(plugin.getConfig().getString("messages.party.min_required","&c최소 인원 {min}명이 필요합니다.").replace("{min}", String.valueOf(d.minPlayers))));
+                return false;
+            }
+            if(members.size()>Math.max(d.minPlayers, d.maxPlayers)){
+                p.sendMessage(Text.color(plugin.getConfig().getString("messages.party.max_exceeded","&c최대 인원 {max}명을 초과했습니다.").replace("{max}", String.valueOf(d.maxPlayers))));
+                return false;
+            }
+        }
+        Instance ins = new Instance(plugin, d, members);
+        running.put(d.name.toLowerCase(), ins);
+        ins.start();
+        return true;
+    }
+
+    private void leaveAll(Instance ins){
+        for(UUID u : new ArrayList<>(ins.players)) playerToInstance.remove(u);
+        running.remove(ins.dungeon.name.toLowerCase());
+    }
+
+    @EventHandler public void onQuit(PlayerQuitEvent e){
+        Instance ins = playerToInstance.get(e.getPlayer().getUniqueId());
+        if(ins!=null){
+            ins.players.remove(e.getPlayer().getUniqueId());
+            if(ins.players.isEmpty()) ins.stop("모든 참가자 이탈");
+        }
+    }
+
+    public class Instance {
+        private final PixelDungeonPlugin plugin;
+        private final Dungeon dungeon;
+        private final Set<UUID> players = new LinkedHashSet<>();
+        private int stageIndex = 0;
+        private String tag;
+        private java.util.UUID instanceId = java.util.UUID.randomUUID();
+        private StageTracker stageTracker;
+        private java.util.Set<java.util.UUID> pending = new java.util.HashSet<>();
+        private boolean trackerStarted = false;
+        private long startedAtMs = 0L;
+        private BossBar bar;
+        private int taskId = -1;
+        private long stageEndAt = 0L;
+        private boolean stageSpawned = false;
+        private int stageTotal = 0;
+        private final Map<UUID, Location> prevLoc = new HashMap<>();
+
+        public Instance(PixelDungeonPlugin plugin, Dungeon d, List<Player> members){
+            this.plugin=plugin; this.dungeon=d;
+            for(Player pl : members){ players.add(pl.getUniqueId()); playerToInstance.put(pl.getUniqueId(), this); }
+            this.tag = plugin.getConfig().getString("spawnNamePrefix","PD-")+UUID.randomUUID().toString().substring(0,8);
+                    this.stageTracker = new StageTracker(plugin);
+}
+
+        public void start(){
+            this.startedAtMs = System.currentTimeMillis();
+            this.startedAtMs = System.currentTimeMillis();
+            Location spawn=dungeon.spawnLocation();
+            if(spawn==null){ broadcast("&c스폰 위치가 설정되지 않았습니다."); stop("설정 오류"); return; }
+            for(UUID u : players){
+                Player px=Bukkit.getPlayer(u);
+                if(px!=null){ prevLoc.put(u, px.getLocation().clone()); px.teleport(spawn); }
+            }
+            broadcast(plugin.getConfig().getString("messages.dungeon.start","&a[던전 시작] &f{dungeon} &7({difficulty})").replace("{dungeon}", dungeon.name).replace("{difficulty}", dungeon.difficulty));
+            
+            try{
+                java.util.List<String> names = new java.util.ArrayList<>();
+                for(java.util.UUID u : players){
+                    String nm = null;
+                    org.bukkit.entity.Player px = org.bukkit.Bukkit.getPlayer(u);
+                    if(px!=null) nm = px.getName();
+                    else{
+                        try { nm = org.bukkit.Bukkit.getOfflinePlayer(u).getName(); } catch(Throwable ignored){}
+                    }
+                    if(nm!=null) names.add(nm);
+                }
+                String playersStr;
+                if(names.size()<=1){
+                    playersStr = (names.isEmpty()? "파티원" : (names.get(0) + " 님"));
+                } else if(names.size()==2){
+                    playersStr = names.get(0) + " 님과 " + names.get(1) + " 님";
+                } else {
+                    playersStr = names.get(0) + " 님 외 " + (names.size()-1) + "명";
+                }
+                String msg = plugin.getConfig().getString("messages.dungeon.challenge_broadcast",
+                        "&b[ &f던전 &b] {players}이 {dungeon}에 도전 합니다! 응원해주세요!!");
+                msg = msg.replace("{players}", playersStr).replace("{dungeon}", dungeon.name);
+                org.bukkit.Bukkit.broadcastMessage(com.github.pixeldungeon.util.Text.color(msg));
+            }catch(Throwable ignored){}
+    bar=Bukkit.createBossBar(Text.color("&b"+dungeon.name+" &7- &f스테이지 1"), BarColor.BLUE, BarStyle.SEGMENTED_10);
+            bar.setProgress(1.0); for(UUID u:players){ Player px=Bukkit.getPlayer(u); if(px!=null) bar.addPlayer(px); }
+            nextStage();
+        }
+
+        private void broadcast(String msg){ for(UUID u : players){ Player px=Bukkit.getPlayer(u); if(px!=null) px.sendMessage(Text.color(msg)); } }
+
+        private void nextStage(){
+            // reset tracker for new stage
+            trackerStarted=false; pending.clear(); if(stageTracker!=null) stageTracker.stop(instanceId);
+            stageIndex++;
+            if(stageIndex>dungeon.stages.size()){
+                for(UUID u:players){ Player px=Bukkit.getPlayer(u); if(px!=null){ dungeon.finalRewards.give(px); } }
+                stop("클리어");
+                return;
+            }
+            Stage s=dungeon.stages.get(stageIndex-1);
+            stageSpawned=false; stageTotal=0; for(SpawnSpec sp : s.spawns) stageTotal += Math.max(0, sp.count);
+            if(bar!=null) bar.setTitle(Text.color("&b"+dungeon.name+" &7- &f스테이지 "+stageIndex));
+            for(UUID u:players){ Player px=Bukkit.getPlayer(u); if(px!=null){
+                String tStart=plugin.getConfig().getString("messages.dungeon.stage_start","&b스테이지 {stage} 시작!").replace("{stage}", String.valueOf(stageIndex));
+                Text.title(px, tStart, "", 10, 40, 10);
+            } }
+
+/* tracker begin moved to spawn-time after we've captured entities */
+            /* tracker begin handled at spawn time */
+            scheduleStage(s);
+        }
+
+        private Location pickSpawnLocation(Stage s, Player ref){
+            if(s.region!=null && Bukkit.getWorld(s.region.world)!=null){
+                org.bukkit.World w=Bukkit.getWorld(s.region.world);
+                java.util.concurrent.ThreadLocalRandom r=java.util.concurrent.ThreadLocalRandom.current();
+                int minx=Math.min(s.region.x1,s.region.x2), maxx=Math.max(s.region.x1,s.region.x2);
+                int minz=Math.min(s.region.z1,s.region.z2), maxz=Math.max(s.region.z1,s.region.z2);
+                int x=r.nextInt(minx, maxx+1), z=r.nextInt(minz, maxz+1);
+                int y=w.getHighestBlockYAt(x,z)+1;
+                return new Location(w, x+0.5, y, z+0.5);
+            }
+            return ref.getLocation();
+        }
+
+        private String buildMoves(List<String> mv){
+            if(mv==null || mv.isEmpty()) return "";
+            StringBuilder sb=new StringBuilder(); int i=1;
+            for(String m : mv){ if(m==null||m.isEmpty()) continue; if(i>4) break; if(sb.length()>0) sb.append(" "); sb.append("move").append(i).append(":").append(m.toLowerCase()); i++; }
+            return sb.toString();
+        }
+
+        private int countTaggedInRegion(Region r, String prefix){
+            int total = 0;
+            if(r==null){
+                for(org.bukkit.World w : Bukkit.getWorlds()){
+                    total += (int) w.getEntities().stream().filter(e -> {
+                        String n=e.getCustomName();
+                        return n!=null && n.startsWith(prefix);
+                    }).count();
+                }
+                return total;
+            }
+            if(Bukkit.getWorld(r.world)==null) return 0;
+            return (int)Bukkit.getWorld(r.world).getEntities().stream().filter(e->{
+                String name=e.getCustomName();
+                return name!=null && name.startsWith(prefix) && r.contains(e.getLocation());
+            }).count();
+        }
+
+        private void clearStage(){
+            for(UUID u: players){
+                Player px=Bukkit.getPlayer(u);
+                if(px!=null){
+                    if(dungeon.stageRewards.containsKey(stageIndex)) dungeon.stageRewards.get(stageIndex).give(px);
+                    String tClear=plugin.getConfig().getString("messages.dungeon.stage_clear","&a스테이지 {stage} 클리어! &7다음 스테이지로 이동").replace("{stage}", String.valueOf(stageIndex));
+                    Text.title(px, tClear, "", 10, 40, 10);
+                }
+            }
+            if(taskId!=-1){ Bukkit.getScheduler().cancelTask(taskId); taskId=-1; }
+            Bukkit.getScheduler().runTaskLater(plugin, this::nextStage, 40L);
+        }
+
+                private void scheduleStage(Stage s){
+            long duration = Math.max(1, s.timeEnabled ? s.timeSeconds : 0) * 1000L;
+            stageEndAt = s.timeEnabled ? System.currentTimeMillis() + duration : Long.MAX_VALUE;
+            if(taskId!=-1) Bukkit.getScheduler().cancelTask(taskId);
+            taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable(){
+                public void run(){
+                    long now = System.currentTimeMillis();
+                    if(!stageSpawned){
+                        Player ref = Bukkit.getPlayer(players.iterator().next());
+                        if(ref!=null){
+                            for(SpawnSpec sp: s.spawns){
+                                for(int i=0;i<sp.count;i++){
+                                    Location loc = pickSpawnLocation(s, ref);
+                                    String movesArg = buildMoves(sp.moves);
+                                    String base = plugin.getConfig().getString("spawnFormat","pokespawn {species} level:{level} n:{name} {moves}")
+                                            .replace("{species}", sp.species)
+                                            .replace("{level}", String.valueOf(sp.level))
+                                            .replace("{name}", tag)
+                                            .replace("{moves}", movesArg==null? "" : movesArg);
+                                    String cmd = String.format("execute at %s run %s", ref.getName(), base);
+                                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+
+                                    // capture spawned entities and start tracker on first capture
+                                    World w = loc.getWorld();
+                                    if(w!=null){
+                                        Bukkit.getScheduler().runTaskLater(plugin, new Runnable(){
+                                            int tries=0;
+                                            @Override public void run(){
+                                                tries++;
+                                                int added = 0;
+                                                java.util.List<org.bukkit.entity.LivingEntity> fallback = new java.util.ArrayList<>();
+                                                for(org.bukkit.entity.Entity e : w.getNearbyEntities(loc, 8, 8, 8)){
+                                                    if(e instanceof org.bukkit.entity.LivingEntity
+                                                       && !(e instanceof org.bukkit.entity.Player)
+                                                       && !(e instanceof org.bukkit.entity.ArmorStand)){
+                                                        String cn = e.getCustomName();
+                                                        if(cn!=null && cn.startsWith(tag)){
+                                                            pending.add(e.getUniqueId());
+                                                            added++;
+                                                        } else {
+                                                            fallback.add((org.bukkit.entity.LivingEntity)e);
+                                                        }
+                                                    }
+                                                }
+                                                if(added==0 && !fallback.isEmpty()){
+                                                    fallback.sort(java.util.Comparator.comparingDouble(x->x.getLocation().distanceSquared(loc)));
+                                                    for(int k=0;k<Math.min(2, fallback.size());k++) pending.add(fallback.get(k).getUniqueId());
+                                                }
+                                                if(!trackerStarted && !pending.isEmpty()){
+                                                    org.bukkit.World tw = (s.region!=null && org.bukkit.Bukkit.getWorld(s.region.world)!=null)
+                                                            ? org.bukkit.Bukkit.getWorld(s.region.world) : w;
+                                                    if(stageTracker==null) stageTracker = new StageTracker(plugin);
+                                                    stageTracker.begin(instanceId, tw, pending, Instance.this::clearStage);
+                                                    trackerStarted = true;
+                                                }
+                                                if(!trackerStarted && tries<5){ org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, this, 10L); }
+                                            }
+                                        }, 10L);
+                                    }
+                                }
+                            }
+                            stageSpawned = true;
+                        }
+                    }
+
+                    int alive = (stageTracker!=null ? stageTracker.remaining(instanceId) : countTaggedInRegion(s.region, tag));
+                    boolean killDone = (alive == 0);
+                    boolean clear = stageSpawned && trackerStarted && killDone;
+
+                    if(bar!=null){
+                        double progKill = (stageTotal<=0)? 0.0 : (double)alive/(double)stageTotal;
+                        double progTime = s.timeEnabled ? Math.max(0.0, Math.min(1.0, (double)(stageEndAt-now)/(double)duration)) : 0.0;
+                        double prog = Math.max(progKill, progTime);
+                        bar.setProgress(Math.max(0.0, Math.min(1.0, prog)));
+                        String extra = "남은 " + alive + "/" + stageTotal;
+                        if(s.timeEnabled){
+                            long remain = Math.max(0, stageEndAt-now);
+                            long mm = remain/60000, ss = (remain%60000)/1000;
+                            extra += " | " + String.format("%02d:%02d", mm, ss);
+                        }
+                        bar.setTitle(Text.color("&b"+dungeon.name+" &7- &f스테이지 "+stageIndex+" &8(&f"+extra+"&8)"));
+                    }
+
+                    if(clear){ clearStage(); return; }
+
+                    if(s.timeEnabled && now>=stageEndAt && !killDone){
+                        for(UUID u: players){
+                            Player px = Bukkit.getPlayer(u);
+                            if(px!=null) px.sendMessage(Text.color(plugin.getConfig().getString("message.dungeon.fail","&c[던전 실패] &7이유: &f{reason}").replace("{reason}","시간 초과")));
+                        }
+                        stop("시간 초과");
+                    }
+                }
+            }, 20L, 20L);
+        }
+
+        public void stop(String reason){
+            if(taskId!=-1){ Bukkit.getScheduler().cancelTask(taskId); taskId=-1; }
+            if(bar!=null){ bar.removeAll(); bar=null; }
+            // cleanup tagged mobs
+            for(org.bukkit.World w : Bukkit.getWorlds()){
+                w.getEntities().removeIf(e -> {
+                    String n=e.getCustomName();
+                    return n!=null && n.startsWith(tag);
+                });
+            }
+            for(UUID u: players){
+                Player px=Bukkit.getPlayer(u);
+                if(px!=null){
+                    px.sendMessage(ChatColor.YELLOW+"[던전 종료] "+reason);
+                    Location back = prevLoc.get(u);
+                    if(back!=null && back.getWorld()!=null) px.teleport(back);
+                }
+            }
+            if(plugin.webhook().enabled()){
+                java.util.List<String> names = new java.util.ArrayList<>();
+                for(java.util.UUID u : players){ org.bukkit.entity.Player px = org.bukkit.Bukkit.getPlayer(u); if(px!=null) names.add(px.getName()); }
+                if("클리어".equals(reason)){
+                    long dur = Math.max(0, System.currentTimeMillis() - startedAtMs);
+                    plugin.webhook().sendClear(dungeon.name, names, dur);
+                } else {
+                    plugin.webhook().sendFail(dungeon.name, names, reason);
+                }
+            }
+            
+            // Global fail broadcast (non-clear)
+            if(!"클리어".equals(reason)){
+                try{
+                    java.util.List<String> names = new java.util.ArrayList<>();
+                    for(java.util.UUID u : players){
+                        String nm = null;
+                        org.bukkit.entity.Player px = org.bukkit.Bukkit.getPlayer(u);
+                        if(px!=null) nm = px.getName();
+                        else{
+                            try { nm = org.bukkit.Bukkit.getOfflinePlayer(u).getName(); } catch(Throwable ignored){}
+                        }
+                        if(nm!=null) names.add(nm);
+                    }
+                    String playersStr;
+                    if(names.size()<=1){
+                        playersStr = (names.isEmpty()? "파티원" : (names.get(0) + " 님"));
+                    } else if(names.size()==2){
+                        playersStr = names.get(0) + " 님과 " + names.get(1) + " 님";
+                    } else {
+                        playersStr = names.get(0) + " 님 외 " + (names.size()-1) + "명";
+                    }
+                    String msg = plugin.getConfig().getString("messages.dungeon.fail_broadcast",
+                            "&c[ 던전 실패 ] {players}이 {dungeon}에서 실패했습니다. 이유: {reason}");
+                    msg = msg.replace("{players}", playersStr).replace("{dungeon}", dungeon.name).replace("{reason}", reason);
+                    org.bukkit.Bukkit.broadcastMessage(com.github.pixeldungeon.util.Text.color(msg));
+                }catch(Throwable ignored){}
+            }
+                InstanceManager.this.leaveAll(this);
+            if(stageTracker!=null) stageTracker.stop(instanceId);
+            trackerStarted=false; pending.clear();
+        }
+    }
+}
