@@ -1,4 +1,4 @@
-\
+
 package com.minkang.wild;
 
 import net.md_5.bungee.api.ChatMessageType;
