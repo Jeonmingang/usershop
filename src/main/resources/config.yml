@@ -1,51 +1,180 @@
-world: world
-min-radius: 200
-max-radius: 5000
-max-attempts: 120
-cooldown-seconds: 60
-countdown-seconds: 1
-title-countdown: '&e이동까지 &6{sec}&es'
-title-searching: '&e이동중...'
-title-done: '&a이동 완료!'
-title-sub-found: '&7야생 좌표를 찾는 중'
-title-sub-done: '&7(x:{x}, y:{y}, z:{z})'
-search:
-  downward-check-depth: 8
-  phases: 3
-  phase-radius-grow: 0.5
-unsafe-blocks:
-- LAVA
-- WATER
-- CACTUS
-- FIRE
-- CAMPFIRE
-- SWEET_BERRY_BUSH
-- MAGMA_BLOCK
-megaphone:
+settings:
+  base-slots: 9
+  max-slots: 54
+  titles:
+    main: '&e유저 상점 &7| &f전체'
+    player: '&e유저 상점 &7| &f{player}'
+    search: '&e유저 상점 &7| &f{query} 검색 결과'
+  icons:
+    myshop:
+      material: PLAYER_HEAD
+      name: '&e내 상점 보기'
+      lore:
+      - '&7내가 올린 물품만 보기'
+      slot: 48
+    prev:
+      material: ARROW
+      name: '&a이전 페이지'
+      lore:
+      - '&7클릭하여 이전 페이지로'
+      slot: 45
+    search:
+      material: COMPASS
+      name: '&b검색'
+      lore:
+      - '&7클릭 후 채팅에 검색어를 입력하세요'
+      - '&7한글/영어 모두 가능'
+      slot: 49
+    next:
+      material: ARROW
+      name: '&a다음 페이지'
+      lore:
+      - '&7클릭하여 다음 페이지로'
+      slot: 53
+    back:
+      material: BARRIER
+      name: '&c뒤로가기'
+      lore:
+      - '&7메인 유저상점으로 돌아가기'
+      slot: 49
+    sort:
+      material: COMPASS
+      name: '&e정렬 모드'
+      lore:
+      - '&7현재: &f모드'
+      - '&7클릭 시 정렬 순서를 변경합니다.'
+      slot: 46
+    filter:
+      material: HOPPER
+      name: '&e필터'
+      lore:
+      - '&7현재: &f모드'
+      - '&7클릭 시 필터를 변경합니다.'
+      slot: 47
+    group:
+      material: CHEST
+      name: '&e같은 아이템 묶기'
+      lore:
+      - '&7현재: &f모드'
+      - '&7클릭 시 같은 아이템을 묶어서 보여줍니다.'
+      slot: 50
+economy:
   enabled: true
-  use-vault: true
-  cost-per-use: 1000
-  currency-name: 코인
-  cooldown-seconds: 30
-  anti-duplicate-seconds: 10
-  message-max-length: 120
-  allow-color: true
-  allow-hex: true
-  prefix: '&6[확성기] &f{player}&7: '
-  hover: '&e{player}님의 확성기
-
-    &7{time}'
-  click-suggest: '/귓 {player} '
-  sound:
-    enabled: true
-    name: BLOCK_BELL_USE
-    volume: 0.7
-    pitch: 1.0
-  cost: 0
+items:
+  open-item: ''
+  expand-ticket: ''
+  register-ticket: ''
+format:
+  price: '&6가격: &e{price}'
+  seller: '&7판매자: &f{seller}'
+  stock: '&7재고: &f{stock}개'
+  shop-head-name: '&e{player}&f님의 상점'
+  shop-head-lore:
+  - '&7클릭하여 {player} 님의 상점 열기'
+  player-shop-lore:
+  - '&7{item}'
+  - '&6가격: &e{price}'
+  - '&7재고: &f{stock}개'
+  - '&7좌클릭: 1개 구매'
+  - '&7쉬프트+좌클릭: 64개 구매'
+  price-stats: '&7전국 평균: &f{avg} &7(최저: &f{min}&7 / 등록수: &f{count}&7)'
+messages:
+  cannot-buy-own: '&c자기 상점의 물품은 구매할 수 없습니다.'
+  register-fee-charged: '&7등록 수수료 &e{fee}&7원이 차감되었습니다.'
+  prefix: '&8[&e유저상점&8]&r '
+  help:
+  - '&e/유저상점 보관함 &7- 만료/회수 아이템 보관함 열기'
+  - '&e/유저상점 &7- 사용 가능한 명령어 보기'
+  - '&e/유저상점 열기 &7- 유저상점 GUI 열기'
+  - '&e/유저상점 등록 <가격> <갯수> <슬롯> &7- 손에 든 아이템 등록'
+  - '&e/유저상점 빠른등록 <가격> &7- 손에 든 아이템 전체를 빈 슬롯에 자동 등록'
+  - '&e/유저상점 등록취소 <슬롯> &7- 내 상점 슬롯 등록 취소'
+  - '&e/유저상점 확장 &7- 확장권 1개로 슬롯 +9 (최대 54)'
+  not-player: '&c플레이어만 사용할 수 있습니다.'
+  open: '&a유저상점 GUI를 열었습니다.'
+  set-open-item: '&a오픈 아이템이 설정되었습니다.'
+  set-expand-ticket: '&a확장권 아이템이 설정되었습니다.'
+  need-expand-ticket: '&c확장하려면 확장권 1개가 필요합니다.'
+  expanded: '&a개인 상점이 확장되었습니다! 현재 슬롯: &f{slots}'
+  max-expanded: '&c더 이상 확장할 수 없습니다. 최대 {max} 슬롯입니다.'
+  invalid-number: '&c숫자 형식이 올바르지 않습니다.'
+  invalid-slot: '&c해당 슬롯은 유효하지 않습니다.'
+  no-item-in-hand: '&c손에 아이템을 들고 있어야 합니다.'
+  not-enough-item: '&c등록하려는 수량만큼 아이템을 들고 있지 않습니다.'
+  registered: '&a상점에 등록했습니다. 슬롯: &f{slot}&7, 가격: &f{price}&7, 수량: &f{amount}'
+  unregistered: '&a슬롯 {slot} 등록을 취소했습니다.'
+  broadcast-registered: '&e{player}&7님이 &f{item}&7 x{amount} 을(를) &6{price}&7에 등록했습니다!'
+  purchase-success: '&a구매 완료: &f{item} x{amount} &7- 지불액: &6{paid}'
+  purchase-not-enough: '&c잔액이 부족합니다. 필요액: {need}'
+  out-of-stock: '&c재고가 부족합니다.'
+  inventory-full: '&c인벤토리에 공간이 부족합니다.'
+  storage-inventory-full: '&c인벤토리가 가득 차서 아이템을 보관함에 보관/유지했습니다. 빈 칸을 만들고 다시 시도하세요.'
+  seller-notify: '&e{buyer}&7님이 &f{item} x{amount}&7 을(를) 구매했습니다. 입금액: &6{paid}&7,
+    남은 수량: &f{stock}'
+  search-type: '&a채팅에 검색어를 입력해 주세요. (&7취소: 취소&f)'
+  search-cancelled: '&7검색을 취소했습니다.'
+  admin-removed: '&c관리자가 슬롯 {slot} 등록을 취소했습니다.'
+  reduced-expansion: '&e{player}&7 님의 확장을 &f{count}회&7 줄였습니다. 현재 슬롯: &f{slots}'
+  favorite-added: '&e[유저상점] &7관심 키워드 &f"{keyword}" &7를 추가했습니다.'
+  favorite-removed: '&e[유저상점] &7관심 키워드 &f"{keyword}" &7를 삭제했습니다.'
+  favorite-not-found: '&c해당 키워드를 찾을 수 없습니다: &f"{keyword}"'
+  favorite-list-header: '&e[유저상점] &7당신의 관심 키워드:'
+  favorite-list-empty: '&e[유저상점] &7등록된 관심 키워드가 없습니다.'
+  favorite-list-entry: '&7- &f{keyword}'
+  price-too-low: '&c최소 가격 {min}원 이상만 등록할 수 있습니다.'
+  price-too-high: '&c최대 가격 {max}원 이하만 등록할 수 있습니다.'
+  auto-relisted: '&e[유저상점] &7자동 재등록: &f{item} &7가격: &6{price}&7, 재등록 횟수: &f{count}회'
+  expansion-over-max: '&c더 이상 확장할 수 없습니다. 최대 {max} 슬롯까지 확장 가능합니다.'
+  expansion-success: '&a확장권으로 &f{added}&a 슬롯을 확장했습니다! 현재 슬롯: &f{new}'
+  give-ticket: '&a확장권 &f{count}개&a 를 지급했습니다.'
+  not-ticket: '&c손에 들고 있는 아이템은 확장권이 아닙니다.'
+  reloaded: '&a유저상점 설정을 리로드했습니다.'
+  set-register-ticket: '&a등록권 아이템이 설정되었습니다.'
+  storage-collected: '&a보관함에서 &f{count}개&a 의 아이템을 수령했습니다.'
+  storage-empty: '&7보관함에 수령할 아이템이 없습니다.'
+capacity:
+  base: 9
+  step: 9
+  max: 54
+price-protection:
+  enabled: true
+  min-price: 10.0
+  max-price: 100000000.0
+fees:
+  register: 500
+expiry:
+  days: 5
+  recent-hours: 24
+discord:
+  webhook-url: ''
+  enabled: true
+  on-register: true
+  on-purchase: true
+  daily-summary-enabled: true
+  daily-summary-header: 📊 유저상점 아이템 평균 시세 요약 ({date})
+  daily-summary-line: '- {item} | 오늘 평균 시세 {avg}원 (최저 {min}, 최고 {max}, 거래 {trades}회, 판매수량
+    {amount}개)'
   messages:
-    deducted: '&e확성기 사용료 &6{amount}&e가 차감되었습니다.'
-    insufficient: '&c잔액이 부족합니다. 필요 금액: &e{amount}'
-    bypass: '&7비용이 차감되지 않았습니다.'
-  actionbar:
-    deducted: '&6-{amount} &e확성기'
-debug: false
+    register: '📦 등록: **{seller}** — {item} x{amount} | 가격: {price}'
+    purchase: '💰 구매: **{buyer}** — {item} x{amount} | 지불: {paid} | 판매자: {seller}'
+expansion-ticket:
+  material: PAPER
+  name: '&a유저상점 확장권'
+  lore:
+  - '&7사용 시 개인 상점 슬롯 +9'
+  slots-per-ticket: 9
+auto-relist:
+  enabled: true
+  max-cycles: 0
+  price-multiplier: 1.0
+  notify: true
+favorites:
+  enabled: true
+  max-per-player: 10
+  title: '&e[관심 상품 등록]'
+  subtitle: '&f{item} &7새 상품이 상점에 등록되었습니다!'
+  message: '&e[유저상점] &f{item} &7이(가) 당신의 &d관심 상품&7 키워드에 해당하는 새 상품입니다!'
+auto-reprice:
+  enabled: true
+  max-multiplier: 1.5
+  step-percent: 5.0

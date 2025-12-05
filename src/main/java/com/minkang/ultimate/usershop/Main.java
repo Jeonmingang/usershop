@@ -6,6 +6,7 @@ import com.minkang.ultimate.usershop.listeners.ChatListener;
 import com.minkang.ultimate.usershop.listeners.GuiListener;
 import com.minkang.ultimate.usershop.listeners.InteractListener;
 import com.minkang.ultimate.usershop.util.VaultHook;
+import com.minkang.ultimate.usershop.util.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,6 +23,9 @@ public class Main extends JavaPlugin {
         saveDefaultConfig();
         // legacy translations file
         saveResource("translations.yml", false);
+        saveResource("vanilla-translations.yml", false);
+        // load translation aliases into memory (한글/영문 매핑)
+        ItemUtils.initTranslations(this);
 
         this.vault = new VaultHook(this);
         this.vault.setup();
@@ -30,6 +34,8 @@ public class Main extends JavaPlugin {
         this.shopManager.loadAll();
         // periodic expiry sweep
         org.bukkit.Bukkit.getScheduler().runTaskTimer(this, () -> shopManager.sweepExpired(), 20L*60, 20L*600);
+        // 매 분마다 호출하여 KST 기준 18:00 요약을 전송
+        org.bukkit.Bukkit.getScheduler().runTaskTimer(this, () -> shopManager.tickDailySummaryScheduler(), 20L*60, 20L*60);
 
         getCommand("유저상점").setExecutor(new UserShopCommand(this));
         Bukkit.getPluginManager().registerEvents(new GuiListener(this), this);

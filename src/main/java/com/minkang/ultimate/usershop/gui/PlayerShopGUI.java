@@ -55,7 +55,10 @@ public class PlayerShopGUI implements InventoryHolder {
             ItemStack display = l.getItem().clone();
             ItemMeta meta = display.getItemMeta();
             String pretty = ItemUtils.getPrettyName(display);
-            meta.setLore(makeLore(pretty, l.getPrice(), l.getStock(), Bukkit.getOfflinePlayer(owner)));
+            java.util.List<String> merged = new java.util.ArrayList<>();
+            if (meta != null && meta.hasLore()) merged.addAll(meta.getLore());
+            merged.addAll(makeLore(pretty, l.getPrice(), l.getStock(), Bukkit.getOfflinePlayer(owner)));
+            meta.setLore(merged);
             display.setItemMeta(meta);
             inv.setItem(slot, display);
         }

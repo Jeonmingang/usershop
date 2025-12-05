@@ -1,63 +1,14 @@
-name: WildRandom
-main: com.minkang.wild.RandomWildPlugin
-version: 1.3.6
-api-version: 1.16
-author: MinKang
+name: UltimateUserShop
+main: com.minkang.ultimate.usershop.Main
+version: 2.2.4
+api-version: 1.21
+authors: [Mingang Jeon]
 commands:
-  야생랜덤:
-    description: 지정된 월드에서 안전한 랜덤 위치로 텔레포트합니다.
-    usage: /야생랜덤 [플레이어]
-    aliases:
-    - wildrandom
-    - wild
-    - 랜덤야생
-  확성기:
-    description: 서버 전체에 확성기 메시지를 보냅니다.
-    usage: /확성기 <메시지>
-    aliases:
-    - megaphone
-    - shout
-  귓:
-    description: /w 별칭(귓속말). EssentialsX 등 /w 제공 플러그인으로 전달합니다.
-    usage: /귓 <플레이어> <내용>
-    aliases:
-    - 귓말
-  야생랜덤리로드:
-    description: WildRandom 설정 리로드
-    usage: /야생랜덤리로드
-    aliases:
-    - wildrandomreload
-    - wrreload
-    - 랜덤리로드
-    - 야생랜리로드
+  유저상점:
+    description: 유저상점 명령어 모음
+    aliases: [usershop, user-shop]
+    usage: /유저상점
 permissions:
-  wildrandom.use:
-    description: /야생랜덤 사용 (자기 자신) — 현재는 무권한 허용
-    default: true
-  wildrandom.others:
-    description: 다른 플레이어를 텔레포트
+  usershop.admin:
+    description: 유저상점 관리자 권한
     default: op
-  wildrandom.visible:
-    description: 탭 자동완성/도움말에 야생랜덤 표시
-    default: op
-  shout.use:
-    description: /확성기 사용
-    default: true
-  shout.color:
-    description: 색상코드(&)와 HEX를 사용할 수 있음
-    default: op
-  shout.bypass.cooldown:
-    description: 확성기 쿨다운 무시
-    default: op
-  shout.bypass.cost:
-    description: 확성기 사용 비용 무시
-    default: op
-  shout.visible:
-    description: 탭 자동완성/도움말에 확성기 표시
-    default: op
-  wildrandom.reload:
-    description: 플러그인 설정 리로드 권한
-    default: op
-  whisper.use:
-    description: /귓 사용
-    default: true

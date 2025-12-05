@@ -11,6 +11,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.Sound;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
@@ -33,31 +34,41 @@ public class SearchResultsGUI implements InventoryHolder {
         public Listing listing;
     }
 
+
+    private void playClick(float pitch) {
+        try {
+            viewer.playSound(viewer.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, pitch);
+        } catch (Throwable ignored) {}
+    }
+
     public SearchResultsGUI(Main plugin, Player viewer, String query) {
         this.plugin = plugin;
         this.viewer = viewer;
         this.rawQuery = query;
         // build results
-        String q = ItemUtils.normalize(query);
         java.util.Set<String> needles = new java.util.HashSet<>();
-        needles.add(q);
+        ItemUtils.buildSearchNeedles(query, needles);
+        String q = ItemUtils.normalize(query);
+        // 1) translations.yml (포켓몬/기타 아이템 별칭)
         try {
-            org.bukkit.configuration.file.YamlConfiguration y = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(), "translations.yml"));
-            org.bukkit.configuration.ConfigurationSection aliases = y.getConfigurationSection("aliases");
-            if (aliases != null) {
-                for (String key : aliases.getKeys(false)) {
-                    String keyN = com.minkang.ultimate.usershop.util.ItemUtils.normalize(key);
-                    java.util.List<String> alts = aliases.getStringList(key);
-                    boolean hit = false;
-                    if (keyN.contains(q) || q.contains(keyN)) hit = true;
-                    for (String a : alts) {
-                        String aN = com.minkang.ultimate.usershop.util.ItemUtils.normalize(a);
-                        if (aN.contains(q) || q.contains(aN)) hit = true;
-                    }
-                    if (hit) {
-                        needles.add(keyN);
-                        for (String a : alts) needles.add(com.minkang.ultimate.usershop.util.ItemUtils.normalize(a));
-                    }
+            java.io.File f = new java.io.File(plugin.getDataFolder(), "translations.yml");
+            if (f.exists()) {
+                org.bukkit.configuration.file.YamlConfiguration y = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(f);
+                org.bukkit.configuration.ConfigurationSection aliases = y.getConfigurationSection("aliases");
+                if (aliases != null) {
+                    expandAliasesFromSection(aliases, q, needles);
+                }
+            }
+        } catch (Exception ignore) {}
+
+        // 2) vanilla-translations.yml (바닐라 아이템 한글 별칭)
+        try {
+            java.io.File f = new java.io.File(plugin.getDataFolder(), "vanilla-translations.yml");
+            if (f.exists()) {
+                org.bukkit.configuration.file.YamlConfiguration y = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(f);
+                org.bukkit.configuration.ConfigurationSection aliases = y.getConfigurationSection("aliases");
+                if (aliases != null) {
+                    expandAliasesFromSection(aliases, q, needles);
                 }
             }
         } catch (Exception ignore) {}
@@ -66,8 +77,30 @@ public class SearchResultsGUI implements InventoryHolder {
         for (PlayerShop ps : plugin.getShopManager().allShops()) {
             for (Map.Entry<Integer, Listing> e : ps.getListings().entrySet()) {
                 Listing l = e.getValue();
-                String name = ItemUtils.getPrettyName(l.getItem());
-                String norm = ItemUtils.normalize(name);
+                ItemStack stack = l.getItem();
+                String baseName = ItemUtils.getPrettyName(stack);
+                StringBuilder sb = new StringBuilder();
+                if (baseName != null) sb.append(baseName);
+                if (stack != null) {
+                    sb.append(" ").append(stack.getType().name());
+                    ItemMeta meta = stack.getItemMeta();
+                    if (meta != null) {
+                        if (meta.hasDisplayName()) {
+                            sb.append(" ").append(meta.getDisplayName());
+                        }
+                        if (meta.hasLore()) {
+                            for (String line : meta.getLore()) {
+                                sb.append(" ").append(line);
+                            }
+                        }
+                    }
+                }
+                // also append pretty translated name so that Korean aliases are searchable
+                String prettyName = ItemUtils.getPrettyName(stack);
+                if (prettyName != null && !prettyName.isEmpty()) {
+                    sb.append(" ").append(prettyName);
+                }
+                String norm = ItemUtils.normalize(sb.toString());
                 if (needles.stream().anyMatch(n -> norm.contains(n) || n.contains(norm))) {
                     Result r = new Result();
                     r.owner = ps.getOwner();
@@ -78,6 +111,26 @@ public class SearchResultsGUI implements InventoryHolder {
             }
         }
     }
+
+    private void expandAliasesFromSection(org.bukkit.configuration.ConfigurationSection aliases, String q, java.util.Set<String> needles) {
+        for (String key : aliases.getKeys(false)) {
+            String keyN = ItemUtils.normalize(key);
+            java.util.List<String> alts = aliases.getStringList(key);
+            boolean hit = false;
+            if (keyN.contains(q) || q.contains(keyN)) hit = true;
+            for (String a : alts) {
+                String aN = ItemUtils.normalize(a);
+                if (aN.contains(q) || q.contains(aN)) hit = true;
+            }
+            if (hit) {
+                needles.add(keyN);
+                for (String a : alts) {
+                    needles.add(ItemUtils.normalize(a));
+                }
+            }
+        }
+    }
+
 
     public void open(int page) {
         this.page = page;
@@ -98,6 +151,9 @@ public class SearchResultsGUI implements InventoryHolder {
             ItemMeta meta = it.getItemMeta();
             OfflinePlayer op = Bukkit.getOfflinePlayer(r.owner);
             String pretty = ItemUtils.getPrettyName(it);
+            if (meta != null) {
+                meta.setDisplayName(Main.color("&f" + pretty));
+            }
             List<String> lore = new ArrayList<>();
             lore.add(Main.color(plugin.getConfig().getString("format.price", "가격: {price}").replace("{price}", String.valueOf(r.listing.getPrice()))));
             lore.add(Main.color(plugin.getConfig().getString("format.seller", "판매자: {seller}")
@@ -123,10 +179,12 @@ public class SearchResultsGUI implements InventoryHolder {
         int prevSlot = plugin.getConfig().getInt("settings.icons.prev.slot",45);
         int nextSlot = plugin.getConfig().getInt("settings.icons.next.slot",53);
         if (raw == prevSlot) {
+            playClick(0.9f);
             open(Math.max(0, page - 1));
             return;
         }
         if (raw == nextSlot) {
+            playClick(1.0f);
             open(page + 1);
             return;
         }
@@ -134,6 +192,7 @@ public class SearchResultsGUI implements InventoryHolder {
         if (index >= results.size()) return;
         Result r = results.get(index);
         // open that player's shop directly
+        playClick(1.1f);
         new PlayerShopGUI(plugin, viewer, r.owner).open(0);
     }
 }
